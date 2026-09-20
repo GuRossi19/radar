@@ -1,0 +1,856 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Radar de Apostas</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap">
+<style>
+/* =====================================================================
+   RADAR DE APOSTAS (saída: painel.html). Gerado por `python rotina.py` a partir de dados/.
+   Não edite a saída: edite este modelo (modelos/painel.html) e gere de novo.
+   Todo número vem do JSON injetado no marcador de dados; este arquivo não carrega número.
+   A pergunta que a tela responde em 5 segundos: onde estão as oportunidades ≥ régua de hoje
+   e dos próximos dias. Por isso: Destaques no topo, um dia por vez, torneio agrupado.
+   ===================================================================== */
+
+/* ---------- tokens: tema claro ---------- */
+:root{
+  --bg:#f5f7fa; --bg-2:#eaeef4; --surface:#ffffff; --surface-2:#f0f3f7; --surface-3:#e4e9f0;
+  --ink:#0f1720; --ink-2:#31404f; --muted:#5b6b7c; --muted-2:#8695a4;
+  --line:#dfe5ec; --line-2:#c6d0da;
+  --acc:#1657c4; --acc-suave:#e6eefb;
+  --ok:#0f7a45; --ok-bg:#dcf2e6; --warn:#8a5b00; --warn-bg:#fbeecd; --crit:#b42318; --crit-bg:#fbe4e2;
+  --selo:#121a23; --selo-ink:#f6c945; --selo-borda:#121a23;
+  --esp-futebol:#1b8a5a; --esp-nba:#c2660f; --esp-nfl:#7a5a2e; --esp-tenis:#4f7f12; --esp-ufc:#b03a37;
+  --sombra-1:0 1px 2px rgba(15,23,32,.06);
+  --sombra-2:0 1px 2px rgba(15,23,32,.06),0 8px 20px -8px rgba(15,23,32,.18);
+  --sombra-3:0 24px 70px -20px rgba(15,23,32,.45);
+  --r-1:8px; --r-2:12px; --r-3:18px;
+  --font-d:"Barlow Condensed","Arial Narrow",Impact,sans-serif;
+  --font-b:"Barlow","Helvetica Neue",Arial,sans-serif;
+  --t:.16s cubic-bezier(.2,.7,.4,1);
+}
+/* ---------- tokens: tema escuro ---------- */
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#090d12; --bg-2:#0e141b; --surface:#131b24; --surface-2:#1a242f; --surface-3:#22303d;
+    --ink:#e9eff5; --ink-2:#c3cfdb; --muted:#94a3b3; --muted-2:#6d7d8d;
+    --line:#22303d; --line-2:#334556;
+    --acc:#75a9ff; --acc-suave:#122135;
+    --ok:#4fc98a; --ok-bg:#0f2e20; --warn:#e6b955; --warn-bg:#35290d; --crit:#f58b84; --crit-bg:#3a1a18;
+    --selo:#f6c945; --selo-ink:#141000; --selo-borda:#f6c945;
+    --esp-futebol:#52cc95; --esp-nba:#f0a058; --esp-nfl:#cfa56b; --esp-tenis:#a5d95a; --esp-ufc:#f4837e;
+    --sombra-1:0 1px 2px rgba(0,0,0,.5);
+    --sombra-2:0 1px 2px rgba(0,0,0,.5),0 10px 26px -10px rgba(0,0,0,.7);
+    --sombra-3:0 30px 80px -20px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#090d12; --bg-2:#0e141b; --surface:#131b24; --surface-2:#1a242f; --surface-3:#22303d;
+  --ink:#e9eff5; --ink-2:#c3cfdb; --muted:#94a3b3; --muted-2:#6d7d8d;
+  --line:#22303d; --line-2:#334556;
+  --acc:#75a9ff; --acc-suave:#122135;
+  --ok:#4fc98a; --ok-bg:#0f2e20; --warn:#e6b955; --warn-bg:#35290d; --crit:#f58b84; --crit-bg:#3a1a18;
+  --selo:#f6c945; --selo-ink:#141000; --selo-borda:#f6c945;
+  --esp-futebol:#52cc95; --esp-nba:#f0a058; --esp-nfl:#cfa56b; --esp-tenis:#a5d95a; --esp-ufc:#f4837e;
+  --sombra-1:0 1px 2px rgba(0,0,0,.5);
+  --sombra-2:0 1px 2px rgba(0,0,0,.5),0 10px 26px -10px rgba(0,0,0,.7);
+  --sombra-3:0 30px 80px -20px rgba(0,0,0,.8);
+}
+
+/* ---------- base ---------- */
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-b);font-size:15px;line-height:1.5;
+  font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer}
+h1,h2,h3{margin:0;font-family:var(--font-d);line-height:1.03;text-wrap:balance}
+p{margin:0}
+a{color:var(--acc)}
+.wrap{max-width:1120px;margin:0 auto;padding:14px 16px 56px}
+.num{font-variant-numeric:tabular-nums}
+:focus-visible{outline:3px solid var(--acc);outline-offset:2px;border-radius:4px}
+@media (prefers-reduced-motion: reduce){*{transition:none !important;animation:none !important;scroll-behavior:auto !important}}
+
+.ico{width:1em;height:1em;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.e-futebol{--esp:var(--esp-futebol)} .e-nba{--esp:var(--esp-nba)} .e-nfl{--esp:var(--esp-nfl)}
+.e-tenis{--esp:var(--esp-tenis)} .e-ufc{--esp:var(--esp-ufc)} .e-outro{--esp:var(--muted)}
+
+/* ---------- cabeçalho compacto ---------- */
+.topo{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.marca{display:flex;align-items:center;gap:10px;min-width:0}
+.marca .logo{width:38px;height:38px;flex:none;border-radius:11px;background:var(--selo);color:var(--selo-ink);
+  display:grid;place-items:center;box-shadow:var(--sombra-1)}
+.marca .logo svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+.marca h1{font-size:26px;font-weight:800;letter-spacing:-.01em;text-transform:uppercase}
+.marca h1 em{font-style:normal;color:var(--muted)}
+.meta{font-size:11.5px;color:var(--muted);letter-spacing:.02em;margin-top:1px;overflow-wrap:anywhere}
+.btn-ic{width:38px;height:38px;border:1px solid var(--line-2);background:var(--surface);border-radius:11px;
+  display:grid;place-items:center;transition:background var(--t),border-color var(--t)}
+.btn-ic:hover{background:var(--surface-2);border-color:var(--muted-2)}
+.btn-ic svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+
+/* ---------- faixa fina de números ---------- */
+.faixa{display:flex;flex-wrap:wrap;gap:0 22px;align-items:baseline;margin:12px 0 8px;padding:8px 12px;
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--r-2);box-shadow:var(--sombra-1)}
+.faixa .f{display:flex;align-items:baseline;gap:6px;padding:1px 0}
+.faixa b{font-family:var(--font-d);font-size:22px;font-weight:700;line-height:1}
+.faixa span{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.faixa .f.ouro b{color:var(--acc)}
+
+/* ---------- aviso discreto ---------- */
+.aviso{margin:8px 0 0;font-size:12.5px;color:var(--muted)}
+.aviso>summary{cursor:pointer;list-style:none;display:inline-flex;align-items:center;gap:6px;
+  padding:3px 10px 3px 8px;border:1px dashed var(--line-2);border-radius:999px}
+.aviso>summary::-webkit-details-marker{display:none}
+.aviso>summary::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--warn);flex:none}
+.aviso[open]>summary{border-style:solid}
+.aviso p{margin-top:8px;padding:10px 12px;background:var(--warn-bg);color:var(--ink-2);
+  border-left:3px solid var(--warn);border-radius:0 var(--r-1) var(--r-1) 0;font-size:13px}
+.dlg .aviso{margin-top:14px}
+
+/* ---------- abas ---------- */
+nav.abas{display:flex;gap:2px;margin:14px 0 0;border-bottom:1px solid var(--line-2);overflow-x:auto;scrollbar-width:none}
+nav.abas::-webkit-scrollbar{display:none}
+nav.abas button{border:0;background:none;padding:9px 13px;font-family:var(--font-d);font-size:17px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.04em;color:var(--muted);border-bottom:3px solid transparent;white-space:nowrap;
+  transition:color var(--t),border-color var(--t)}
+nav.abas button:hover{color:var(--ink-2)}
+nav.abas button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--acc)}
+nav.abas .badge{display:inline-block;margin-left:5px;min-width:19px;padding:0 5px;border-radius:999px;
+  background:var(--acc-suave);color:var(--acc);font-family:var(--font-b);font-size:12px;font-weight:700;line-height:19px;text-align:center}
+section.painel[hidden]{display:none}
+section.painel{padding-top:14px}
+
+/* ---------- destaques ---------- */
+.dest-cab{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:9px}
+.dest-cab h2{font-size:21px;font-weight:800;text-transform:uppercase;letter-spacing:.02em;display:flex;align-items:center;gap:7px}
+.dest-cab h2 .pt{width:9px;height:9px;border-radius:50%;background:#e8b21f;box-shadow:0 0 0 4px rgba(232,178,31,.2)}
+.dest-cab p{font-size:13px;color:var(--muted)}
+.destaques{display:grid;grid-template-columns:repeat(auto-fill,minmax(228px,1fr));gap:10px;margin-bottom:24px}
+.cd{position:relative;text-align:left;border:1px solid var(--line);border-left:3px solid var(--esp,var(--line-2));
+  background:var(--surface);border-radius:var(--r-2);padding:11px 12px 12px;box-shadow:var(--sombra-1);
+  display:grid;gap:7px;transition:transform var(--t),box-shadow var(--t),border-color var(--t)}
+.cd:hover{transform:translateY(-2px);box-shadow:var(--sombra-2)}
+.cd .cd-top{display:flex;align-items:center;gap:6px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--esp,var(--muted));font-weight:600}
+.cd .cd-top .ico{font-size:14px}
+.cd .cd-top .qd{margin-left:auto;color:var(--muted);letter-spacing:.02em}
+.cd .cd-tit{font-weight:600;font-size:15px;line-height:1.25;overflow-wrap:anywhere;color:var(--ink)}
+.cd .cd-pe{display:flex;align-items:flex-end;justify-content:space-between;gap:8px;margin-top:1px}
+.cd .cd-p{font-family:var(--font-d);font-size:34px;font-weight:800;line-height:.9;color:var(--ink)}
+.cd .cd-p small{display:block;font-family:var(--font-b);font-size:10.5px;font-weight:600;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--muted);line-height:1.4;margin-top:3px}
+.cd .cd-n{background:var(--selo);color:var(--selo-ink);border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700;letter-spacing:.02em;white-space:nowrap}
+.vazio-dest{border:1px dashed var(--line-2);border-radius:var(--r-2);padding:16px;color:var(--muted);font-size:13.5px;margin-bottom:22px}
+
+/* ---------- seletor de dias (fixo ao rolar) ---------- */
+.dias-wrap{position:sticky;top:0;z-index:5;margin:0 -16px;padding:8px 16px 8px;
+  background:linear-gradient(var(--bg) 72%,rgba(0,0,0,0));backdrop-filter:blur(6px)}
+.dias{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.dias::-webkit-scrollbar{display:none}
+.dias button{flex:none;border:1px solid var(--line-2);background:var(--surface);border-radius:var(--r-2);
+  padding:6px 11px 7px;text-align:left;min-width:96px;transition:background var(--t),border-color var(--t),color var(--t)}
+.dias button:hover{border-color:var(--muted-2)}
+.dias .d1{display:block;font-family:var(--font-d);font-size:16px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;line-height:1.1}
+.dias .d2{display:block;font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap}
+.dias .d3{display:block;font-size:11px;font-weight:600;color:var(--ink-2);white-space:nowrap;margin-top:1px}
+.dias .pip{display:inline-block;width:6px;height:6px;border-radius:50%;background:#e8b21f;margin-right:4px;vertical-align:1px}
+.dias button[aria-selected="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.dias button[aria-selected="true"] .d2{color:var(--bg);opacity:.72}
+.dias button[aria-selected="true"] .d3{color:var(--bg);opacity:.95}
+
+/* ---------- filtros ---------- */
+.filtros{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:12px 0 4px}
+.chip{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line-2);background:var(--surface);
+  border-radius:999px;padding:5px 11px;font-size:13px;font-weight:500;color:var(--ink-2);
+  transition:background var(--t),border-color var(--t),color var(--t)}
+.chip .ico{font-size:14px;color:var(--esp,var(--muted))}
+.chip .qt{font-size:11.5px;color:var(--muted);font-weight:600}
+.chip:hover{border-color:var(--muted-2)}
+.chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.chip[aria-pressed="true"] .ico,.chip[aria-pressed="true"] .qt{color:var(--bg);opacity:.85}
+.busca{position:relative;flex:1 1 170px;min-width:150px}
+.busca input{width:100%;border:1px solid var(--line-2);background:var(--surface);border-radius:999px;padding:6px 12px 6px 30px;font-size:13px}
+.busca svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:14px;height:14px;
+  fill:none;stroke:var(--muted);stroke-width:2;stroke-linecap:round;pointer-events:none}
+.sw{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:500;border:1px solid var(--line-2);
+  background:var(--surface);border-radius:999px;padding:4px 12px 4px 8px}
+.sw input{position:absolute;opacity:0;width:0;height:0}
+.sw .tr{width:34px;height:19px;border-radius:999px;background:var(--surface-3);position:relative;transition:background var(--t);flex:none}
+.sw .tr::after{content:"";position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:var(--surface);
+  box-shadow:var(--sombra-1);transition:transform var(--t)}
+.sw input:checked+.tr{background:var(--acc)}
+.sw input:checked+.tr::after{transform:translateX(15px)}
+.sw input:focus-visible+.tr{outline:3px solid var(--acc);outline-offset:2px}
+.sel-t{flex:1 1 150px;min-width:0;border:1px solid var(--line-2);background:var(--surface);border-radius:999px;padding:5px 10px;font-size:13px;max-width:100%}
+
+/* ---------- grupos por torneio ---------- */
+.grupo{border:1px solid var(--line);background:var(--surface);border-radius:var(--r-2);margin:10px 0;
+  overflow:hidden;box-shadow:var(--sombra-1)}
+.grupo.tem{border-color:var(--line-2)}
+.gcab{display:flex;align-items:center;gap:9px;width:100%;border:0;background:var(--surface-2);padding:9px 12px;text-align:left;
+  border-left:3px solid var(--esp,var(--line-2));transition:background var(--t)}
+.gcab:hover{background:var(--surface-3)}
+.gcab .ico{font-size:17px;color:var(--esp,var(--muted))}
+.gcab .gn{font-family:var(--font-d);font-size:18px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gcab .gq{font-size:11.5px;color:var(--muted);white-space:nowrap}
+.gcab .gop{margin-left:auto;background:var(--selo);color:var(--selo-ink);border-radius:999px;padding:1px 9px;
+  font-size:12px;font-weight:700;white-space:nowrap}
+.gcab .seta{margin-left:auto;width:15px;height:15px;flex:none;fill:none;stroke:var(--muted);stroke-width:2.2;
+  stroke-linecap:round;transition:transform var(--t)}
+.gcab .gop+.seta{margin-left:0}
+.gcab[aria-expanded="false"] .seta{transform:rotate(-90deg)}
+.gcab[aria-expanded="false"]+.glista{display:none}
+.glista{display:block}
+
+/* ---------- linha do evento ---------- */
+.ev{display:grid;grid-template-columns:54px minmax(0,1fr) auto;gap:11px;align-items:center;width:100%;text-align:left;
+  border:0;border-top:1px solid var(--line);background:none;padding:9px 12px;color:var(--ink);transition:background var(--t)}
+.ev:first-child{border-top:0}
+.ev:hover{background:var(--surface-2)}
+.ev .hora{font-family:var(--font-d);font-size:19px;font-weight:700;line-height:1.05}
+.ev .hora small{display:block;font-family:var(--font-b);font-size:10px;font-weight:600;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--muted-2);margin-top:1px}
+.ev .tit{font-weight:600;line-height:1.25;overflow-wrap:anywhere}
+.ev .sub{font-size:12px;color:var(--muted);margin-top:1px}
+.ev.zero .tit{font-weight:500;color:var(--ink-2)}
+.ev.fim{opacity:.62}
+.ev.fim:hover{opacity:1}
+.mini{display:flex;height:4px;border-radius:2px;overflow:hidden;background:var(--surface-3);margin-top:6px;max-width:240px}
+.mini i{display:block;height:100%}
+.mini i.c{background:var(--esp,var(--acc))} .mini i.x{background:var(--muted-2);opacity:.55} .mini i.f{background:var(--acc);opacity:.55}
+.selo{display:inline-flex;align-items:baseline;gap:4px;border-radius:999px;padding:3px 10px;font-weight:700;font-size:14px;
+  background:var(--selo);color:var(--selo-ink);white-space:nowrap;box-shadow:var(--sombra-1)}
+.selo small{font-size:10.5px;letter-spacing:.04em;font-weight:600;opacity:.85}
+.selo.zero{background:none;color:var(--muted-2);border:0;font-size:11.5px;font-weight:500;padding:3px 2px;box-shadow:none}
+.selo.fim{background:var(--surface-3);color:var(--ink-2);font-size:13px;box-shadow:none}
+.vazio{color:var(--muted);padding:18px 12px;font-size:13.5px}
+.semjanela{margin-top:16px;font-size:12.5px;color:var(--muted)}
+.encerrados>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:9px 12px;
+  background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-2);font-size:13px;color:var(--muted)}
+.encerrados>summary::-webkit-details-marker{display:none}
+.encerrados{margin:14px 0 0}
+.encerrados[open]>summary{border-radius:var(--r-2) var(--r-2) 0 0}
+.encerrados .grupo{margin:0;border-radius:0 0 var(--r-2) var(--r-2);border-top:0}
+
+/* ---------- barra 1-X-2 ---------- */
+.b12{margin:2px 0 0}
+.b12 .tr{display:flex;height:22px;border-radius:6px;overflow:hidden;background:var(--surface-3)}
+.b12 .tr i{display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;
+  min-width:0;overflow:hidden;white-space:nowrap}
+.b12 .tr i{color:var(--bg)}
+.b12 .tr i.c{background:var(--esp,var(--acc))} .b12 .tr i.x{background:var(--muted)} .b12 .tr i.f{background:var(--acc)}
+.b12 .rot{display:flex;justify-content:space-between;gap:8px;font-size:11.5px;color:var(--muted);margin-top:5px}
+.b12 .rot span{max-width:46%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.b12 .rot span:last-child{text-align:right}
+.forma{display:flex;gap:3px;flex-wrap:wrap}
+.forma b{width:19px;height:19px;border-radius:5px;display:grid;place-items:center;font-size:11px;font-weight:700;color:#fff}
+.forma b{color:var(--bg)}
+.forma b.V{background:var(--ok)} .forma b.E{background:var(--muted)} .forma b.D{background:var(--crit)}
+.lado{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid var(--line)}
+.lado .ln{font-weight:600;font-size:13.5px;min-width:0;overflow-wrap:anywhere}
+.lado .lf{margin-left:auto;flex:none}
+.lado .lnota{display:block;font-size:11.5px;color:var(--muted);font-weight:400}
+.dests{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:7px;margin-top:11px}
+.dest{background:var(--surface-2);border-radius:var(--r-1);padding:7px 10px}
+.dest span{display:block;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.dest b{display:block;font-family:var(--font-d);font-size:19px;font-weight:700;line-height:1.15;margin-top:1px;overflow-wrap:anywhere}
+
+/* ---------- oportunidade: cartão com medidor ---------- */
+.op{border:1px solid var(--line-2);background:var(--surface);border-radius:var(--r-2);padding:11px 12px;margin-top:9px;
+  box-shadow:var(--sombra-1)}
+.op .ot{font-size:17px;font-weight:700;line-height:1.25;overflow-wrap:anywhere;letter-spacing:-.005em}
+.op .oM{display:flex;align-items:center;gap:13px;margin-top:9px}
+.op .med{flex:1;min-width:0}
+.op .med .esc{position:relative;height:10px;border-radius:5px;background:var(--surface-3);overflow:hidden}
+.op .med .esc i{position:absolute;top:0;bottom:0;left:0;border-radius:5px;background:linear-gradient(90deg,var(--acc),#e8b21f)}
+.op .med .esc u{position:absolute;top:-2px;bottom:-2px;width:3px;margin-left:-1px;background:var(--ink);opacity:.8}
+.op .med .leg{display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted);margin-top:4px}
+.op .opp{font-family:var(--font-d);font-size:33px;font-weight:800;line-height:.9;color:var(--ink);flex:none}
+.op .lei{font-size:12.5px;color:var(--muted);margin-top:8px;line-height:1.45}
+.op details{margin-top:6px}
+.op summary{cursor:pointer;font-size:12px;font-weight:600;color:var(--acc);list-style:none;display:inline-flex;gap:5px;align-items:center}
+.op summary::-webkit-details-marker{display:none}
+.op summary::after{content:"›";transform:rotate(90deg);display:inline-block;font-weight:700}
+.op details[open] summary::after{transform:rotate(-90deg)}
+.op details p{font-size:12px;color:var(--muted);margin-top:5px;padding:8px 10px;background:var(--surface-2);border-radius:var(--r-1);line-height:1.5}
+
+/* ---------- painel lateral / folha do evento ---------- */
+dialog{border:0;padding:0;background:var(--surface);color:var(--ink);box-shadow:var(--sombra-3);
+  max-width:none;max-height:none;width:100%;height:auto}
+dialog::backdrop{background:rgba(5,9,13,.6)}
+@media (min-width:721px){
+  dialog{margin:0 0 0 auto;height:100%;max-height:100%;width:min(690px,96vw);border-radius:var(--r-3) 0 0 var(--r-3);
+    border-left:1px solid var(--line-2)}
+}
+@media (max-width:720px){
+  dialog{margin:auto auto 0;height:94dvh;max-height:94dvh;width:100%;border-radius:var(--r-3) var(--r-3) 0 0}
+}
+.dlg{display:flex;flex-direction:column;height:100%}
+.dlg .cab{position:sticky;top:0;z-index:2;display:flex;gap:10px;align-items:flex-start;padding:14px 16px 11px;
+  background:var(--surface);border-bottom:1px solid var(--line)}
+.dlg .cab .k{display:flex;align-items:center;gap:6px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--esp,var(--muted));font-weight:600;margin-bottom:3px}
+.dlg .cab .k .ico{font-size:14px}
+.dlg h2{font-size:25px;font-weight:800;text-transform:uppercase;letter-spacing:-.005em;overflow-wrap:anywhere}
+.dlg .quando{font-size:12.5px;color:var(--muted);margin-top:3px}
+.dlg .corpo{padding:14px 16px 28px;overflow-y:auto;overscroll-behavior:contain;flex:1}
+.dlg h4{margin:18px 0 6px;font-family:var(--font-d);font-size:15px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.dlg h4:first-child{margin-top:0}
+.dlg ul{margin:4px 0;padding-left:17px;font-size:13.5px;color:var(--ink-2)}
+.dlg li{margin:4px 0}
+.dlg .resumo{font-size:15px;line-height:1.5}
+.x{width:34px;height:34px;flex:none;margin-left:auto;border:1px solid var(--line-2);background:var(--surface);
+  border-radius:10px;display:grid;place-items:center;transition:background var(--t)}
+.x:hover{background:var(--surface-2)}
+.x svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.marca-fim{display:inline-block;background:var(--surface-3);border-radius:999px;padding:2px 10px;font-size:13px;font-weight:600}
+
+/* ---------- cartões / tabelas (desempenho e perguntas) ---------- */
+.cartao{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-2);box-shadow:var(--sombra-1);padding:14px 15px;margin-bottom:14px}
+.cartao h3{font-size:19px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin-bottom:7px}
+.cartao p{margin:6px 0}
+.nota{font-size:12.5px;color:var(--muted);line-height:1.5}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:10px;margin-bottom:16px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-2);box-shadow:var(--sombra-1);padding:12px 13px}
+.kpi span{display:block;font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.kpi b{display:block;font-family:var(--font-d);font-size:38px;font-weight:800;line-height:1;margin:5px 0 3px}
+.kpi small{display:block;font-size:11.5px;color:var(--muted);line-height:1.35}
+.grafico{width:100%;max-width:560px;height:auto;display:block;margin:8px 0 4px;overflow:visible}
+.grafico text{font-family:var(--font-b);font-size:11px;fill:var(--muted)}
+.grafico text.nome{fill:var(--ink);font-weight:600}
+.grafico text.val{fill:var(--ink);font-weight:700}
+details.secao{border-top:1px solid var(--line);margin-top:10px}
+details.secao>summary{cursor:pointer;list-style:none;padding:9px 0 8px;font-family:var(--font-d);font-size:15px;
+  letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:7px}
+details.secao>summary::-webkit-details-marker{display:none}
+details.secao>summary::before{content:"›";display:inline-block;transform:rotate(90deg);transition:transform var(--t);font-size:17px}
+details.secao[open]>summary::before{transform:rotate(-90deg)}
+.tabela{width:100%;overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left;white-space:normal}
+th{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.pill{display:inline-block;border-radius:999px;padding:1px 9px;font-size:11.5px;font-weight:600}
+.pill.ok{background:var(--ok-bg);color:var(--ok)} .pill.warn{background:var(--warn-bg);color:var(--warn)} .pill.crit{background:var(--crit-bg);color:var(--crit)}
+.barra{position:relative;height:8px;border-radius:4px;background:var(--surface-3);min-width:90px}
+.barra i{position:absolute;top:0;bottom:0;border-radius:4px;background:var(--acc);opacity:.5}
+.barra b{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink)}
+.barra u{position:absolute;top:-3px;bottom:-3px;width:0;border-left:2px dashed var(--crit)}
+.perg{border-top:1px solid var(--line);padding:11px 0}
+.perg:first-of-type{border-top:0}
+.perg .q{font-weight:600}
+.eyebrow{font-family:var(--font-d);font-weight:600;letter-spacing:.12em;text-transform:uppercase;font-size:11.5px;color:var(--muted)}
+.nada{display:flex;gap:12px;align-items:center;padding:20px 16px;border:1px dashed var(--line-2);border-radius:var(--r-2);color:var(--muted)}
+.nada svg{width:26px;height:26px;flex:none;fill:none;stroke:var(--ok);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.nada b{display:block;color:var(--ink);font-family:var(--font-d);font-size:19px;text-transform:uppercase;letter-spacing:.03em}
+.rodape{margin-top:26px;padding-top:12px;border-top:1px solid var(--line);font-size:12px;color:var(--muted-2)}
+
+@media (max-width:720px){
+  .wrap{padding:12px 16px 48px}
+  .marca h1{font-size:22px}
+  .faixa{gap:0 16px;padding:7px 11px}
+  .faixa b{font-size:19px}
+  .faixa{display:grid;grid-template-columns:1fr 1fr;gap:5px 14px}
+  .destaques{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;margin:0 -16px 20px;
+    padding:2px 16px 10px;scrollbar-width:none}
+  .destaques::-webkit-scrollbar{display:none}
+  .cd{flex:0 0 78%;scroll-snap-align:start}
+  .ev{grid-template-columns:48px minmax(0,1fr) auto;gap:9px;padding:9px 10px}
+  .col-opc{display:none}
+  .kpi b{font-size:32px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="topo">
+    <div class="marca">
+      <span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.4"/><path d="M12 12L18.4 5.6"/><circle cx="18.4" cy="5.6" r="1.6" fill="currentColor" stroke="none"/></svg></span>
+      <div>
+        <h1>Radar <em>de Apostas</em></h1>
+        <p class="meta" id="meta"></p>
+      </div>
+    </div>
+    <button class="btn-ic" id="tema" type="button" aria-label="Alternar tema claro e escuro" title="Alternar tema">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.2A8.2 8.2 0 019.8 4 8.4 8.4 0 1020 14.2z"/></svg>
+    </button>
+  </header>
+
+  <div class="faixa" id="faixa"></div>
+
+  <details class="aviso">
+    <summary>Probabilidade não é garantia</summary>
+    <p>O robô estima chances com um modelo estatístico próprio e erra por definição: um evento de 90% falha, em média, uma vez em dez. O painel serve para escolher qual evento vale analisar — não substitui a análise e não lista odds de casas.</p>
+  </details>
+
+  <nav class="abas" role="tablist" aria-label="Seções do painel">
+    <button role="tab" aria-selected="true" data-aba="eventos" type="button">Eventos</button>
+    <button role="tab" aria-selected="false" data-aba="desempenho" type="button">Desempenho do robô</button>
+    <button role="tab" aria-selected="false" data-aba="perguntas" type="button">Perguntas a Gustavo</button>
+  </nav>
+
+  <section class="painel" id="aba-eventos">
+    <div id="dest-bloco"></div>
+    <div class="dias-wrap"><div class="dias" id="dias" role="tablist" aria-label="Dia da agenda"></div></div>
+    <div class="filtros" id="filtros"></div>
+    <div id="lista"></div>
+    <p class="semjanela" id="semjanela"></p>
+  </section>
+
+  <section class="painel" id="aba-desempenho" hidden></section>
+  <section class="painel" id="aba-perguntas" hidden></section>
+
+  <p class="rodape" id="rodape"></p>
+</div>
+
+<dialog id="dlg" aria-label="Detalhe do evento"><div class="dlg" id="dlg-corpo"></div></dialog>
+
+<script id="dados" type="application/json">{"gerado_em":"20/09/2026 12:04","hoje":"2026-09-20","dias":["2026-09-20","2026-09-21","2026-09-22","2026-09-23","2026-09-24"],"versao":"1.1.0","regua":0.9,"teto_base":0.85,"amostra_minima":30,"ultima_mudanca":{"data":"2026-09-19","versao":"1.1.0","texto":"respostas de Gustavo a P2 e P3 (dados/perguntas.json): catálogo de torneios ganha FA Cup, Copa del Rey, Coppa Italia, DFB-Pokal e Coupe de France (a Copa da Liga Inglesa já estava); UFC passa a considerar só o card principal no painel e no backtest (radar/fonte.py § _card_principal_por_luta, radar/motor.py § do_painel) — o rating continua vendo todas as lutas. Números que motivaram: FA Cup bateu 49 de 52 (94,2%) no período inteiro (Wilson 84,4% a 98,0%); Coupe de France, DFB-Pokal e Copa del Rey ainda sem amostra de 30 jogos no período do backtest para medir taxa base de qualquer mercado (18, 18 e 13 jogos previstos); Coppa Italia com 29; UFC (card principal) segue sem nenhuma previsão ≥ régua mesmo sem o filtro de utilidade, em 189 lutas medidas desde 01/07/2025 (antes, com preliminares, eram 311)."},"falhas_de_coleta":{},"torneios":[{"torneio":"premier","nome":"Premier League","esporte":"futebol","eventos":4,"oportunidades":0,"com_oportunidade":0,"ultimo_jogo_na_base":"2026-09-20T13:00Z"},{"torneio":"copa-da-liga","nome":"Copa da Liga Inglesa","esporte":"futebol","eventos":0,"oportunidades":0,"com_oportunidade":0,"ultimo_jogo_na_base":"2026-09-20T13:00Z"},{"torneio":"fa-cup","nome":"FA Cup","esporte":"futebol","eventos":0,"oportunidades":0,"com_oportunidade":0,"ultimo_jogo_na_base":"2026-09-20T13:00Z"},{"torneio":"ligue1","nome":"Ligue 1","esporte":"futebol","eventos":3,"oportunidades":2,"com_oportunidade":1,"ultimo_jogo_na_base":"2026-09-20T13:00Z"},{"torneio":"coupe-de-france","nome":"Coupe de France","esporte":"futebol","eventos":0,"oportunidades":0,"com_oportunidade":0,"ultimo_jogo_na_base":"2026-09-20T13:00Z"},{"torneio":"bundesliga","nome":"Bundesliga","esporte":"futebol","eventos":3,"oportunidades":0,"com_oportunidade":0,"ultimo_jogo_na_base":"2026-09-19T16:30Z"},{"torneio":"dfb-pokal","nome":"DFB-Pokal","esporte":"futebol","eventos":0,"oportunidades":0,"com_oportunidade":0,"ultimo_jogo_na_base":"2026-09-19T16:30Z"},{"torneio":"serie-a","nome":"Serie A (Itália)","esporte":"futebol","eventos":5,"oportunidades":1,"com_oportunidade":1,"ultimo_jogo_na_base":"2026-09-20T13:00Z"},{"torneio":"coppa-italia","nome":"Coppa Italia","esporte":"futebol","eventos":0,"oportunidades":0,"com_oportunidade":0,"ultimo_jogo_na_base":"2026-09-20T13:00Z"},{"torneio":"la-liga","nome":"La Liga","esporte":"futebol","eventos":5,"oportunidades":1,"com_oportunidade":1,"ultimo_jogo_na_base":"2026-09-20T12:00Z"},{"torneio":"copa-del-rey","nome":"Copa del Rey","esporte":"futebol","eventos":0,"oportunidades":0,"com_oportunidade":0,"ultimo_jogo_na_base":"2026-09-20T12:00Z"},{"torneio":"brasileirao","nome":"Brasileirão Série A","esporte":"futebol","eventos":5,"oportunidades":2,"com_oportunidade":1,"ultimo_jogo_na_base":"2026-09-20T00:00Z"},{"torneio":"copa-do-brasil","nome":"Copa do Brasil","esporte":"futebol","eventos":0,"oportunidades":0,"com_oportunidade":0,"ultimo_jogo_na_base":"2026-09-20T00:00Z"},{"torneio":"libertadores","nome":"Libertadores","esporte":"futebol","eventos":0,"oportunidades":0,"com_oportunidade":0,"ultimo_jogo_na_base":"2026-09-20T00:15Z"},{"torneio":"saudita","nome":"Liga Saudita","esporte":"futebol","eventos":0,"oportunidades":0,"com_oportunidade":0,"ultimo_jogo_na_base":"2026-09-13T18:00Z"},{"torneio":"mls","nome":"MLS","esporte":"futebol","eventos":2,"oportunidades":3,"com_oportunidade":2,"ultimo_jogo_na_base":"2026-09-20T02:30Z"},{"torneio":"portugal","nome":"Liga Portugal","esporte":"futebol","eventos":5,"oportunidades":1,"com_oportunidade":1,"ultimo_jogo_na_base":"2026-09-19T19:30Z"},{"torneio":"nfl","nome":"NFL","esporte":"nfl","eventos":16,"oportunidades":2,"com_oportunidade":2,"ultimo_jogo_na_base":"2026-09-18T00:15Z"},{"torneio":"nba","nome":"NBA","esporte":"nba","eventos":0,"oportunidades":0,"com_oportunidade":0,"ultimo_jogo_na_base":"2026-06-14T00:30Z"},{"torneio":"tenis-atp","nome":"Tênis · Grand Slams e Masters 1000 (ATP)","esporte":"tenis","eventos":0,"oportunidades":0,"com_oportunidade":0,"ultimo_jogo_na_base":"2026-09-13T18:15Z"},{"torneio":"tenis-wta","nome":"Tênis · Grand Slams (feminino)","esporte":"tenis","eventos":0,"oportunidades":0,"com_oportunidade":0,"ultimo_jogo_na_base":"2026-09-20T13:35Z"},{"torneio":"ufc","nome":"UFC","esporte":"ufc","eventos":5,"oportunidades":0,"com_oportunidade":0,"ultimo_jogo_na_base":"2026-09-20T01:00Z"}],"eventos":[{"id":"401874934","torneio":"serie-a","nome_torneio":"Serie A (Itália)","esporte":"futebol","dia":"2026-09-20","hora":"07:30","estado":"encerrado","titulo":"Fiorentina × Napoli","detalhe":"","placar":"1 × 1","oportunidades":[],"pode_acontecer":null,"observacoes":[],"resumo":null,"sem_modelo":null,"vitrine":null,"contexto":[]},{"id":"401882861","torneio":"la-liga","nome_torneio":"La Liga","esporte":"futebol","dia":"2026-09-20","hora":"09:00","estado":"encerrado","titulo":"Getafe × Málaga","detalhe":"","placar":"1 × 0","oportunidades":[],"pode_acontecer":null,"observacoes":[],"resumo":null,"sem_modelo":null,"vitrine":null,"contexto":[]},{"id":"401876456","torneio":"ligue1","nome_torneio":"Ligue 1","esporte":"futebol","dia":"2026-09-20","hora":"10:00","estado":"encerrado","titulo":"AJ Auxerre × Brest","detalhe":"","placar":"2 × 1","oportunidades":[],"pode_acontecer":null,"observacoes":[],"resumo":null,"sem_modelo":null,"vitrine":null,"contexto":[]},{"id":"401879276","torneio":"premier","nome_torneio":"Premier League","esporte":"futebol","dia":"2026-09-20","hora":"10:00","estado":"encerrado","titulo":"AFC Bournemouth × Liverpool","detalhe":"","placar":"0 × 1","oportunidades":[],"pode_acontecer":null,"observacoes":[],"resumo":null,"sem_modelo":null,"vitrine":null,"contexto":[]},{"id":"401879273","torneio":"premier","nome_torneio":"Premier League","esporte":"futebol","dia":"2026-09-20","hora":"10:00","estado":"encerrado","titulo":"Leeds United × Crystal Palace","detalhe":"","placar":"0 × 0","oportunidades":[],"pode_acontecer":null,"observacoes":[],"resumo":null,"sem_modelo":null,"vitrine":null,"contexto":[]},{"id":"401879272","torneio":"premier","nome_torneio":"Premier League","esporte":"futebol","dia":"2026-09-20","hora":"10:00","estado":"encerrado","titulo":"Manchester City × Sunderland","detalhe":"","placar":"5 × 3","oportunidades":[],"pode_acontecer":null,"observacoes":[],"resumo":null,"sem_modelo":null,"vitrine":null,"contexto":[]},{"id":"401874752","torneio":"serie-a","nome_torneio":"Serie A (Itália)","esporte":"futebol","dia":"2026-09-20","hora":"10:00","estado":"encerrado","titulo":"Frosinone × Como","detalhe":"","placar":"2 × 0","oportunidades":[],"pode_acontecer":null,"observacoes":[],"resumo":null,"sem_modelo":null,"vitrine":null,"contexto":[]},{"id":"401874801","torneio":"serie-a","nome_torneio":"Serie A (Itália)","esporte":"futebol","dia":"2026-09-20","hora":"10:00","estado":"encerrado","titulo":"Parma × Genoa","detalhe":"","placar":"2 × 1","oportunidades":[],"pode_acontecer":null,"observacoes":[],"resumo":null,"sem_modelo":null,"vitrine":null,"contexto":[]},{"id":"401884788","torneio":"bundesliga","nome_torneio":"Bundesliga","esporte":"futebol","dia":"2026-09-20","hora":"10:30","estado":"ao_vivo","titulo":"Bayer Leverkusen × RB Leipzig","detalhe":"","placar":null,"oportunidades":[],"pode_acontecer":"Modelo: Bayer Leverkusen 49% · empate 23% · RB Leipzig 28%. Gols esperados: 2,0 × 1,4. Placar mais provável: 1 x 1 (10%).","observacoes":["Bayer Leverkusen: ataque 27% acima da média, gols sofridos 15% abaixo da média (71 jogos na base). Últimos 5: DEDVE, 10 gols pró e 9 contra.","RB Leipzig: ataque 18% acima da média, gols sofridos 12% abaixo da média (71 jogos na base). Últimos 5: VDVDV, 12 gols pró e 8 contra.","Mando de campo na base do torneio: em confronto equilibrado o mandante marca 23% a mais que o visitante."],"resumo":"Bayer Leverkusen × RB Leipzig (Bundesliga): leve favoritismo para Bayer Leverkusen, com tendência de muitos gols (total esperado de 3,4 gols).","sem_modelo":null,"vitrine":{"modo":"1x2","p":[0.493,0.2299,0.2771],"rotulos":["Bayer Leverkusen","Empate","RB Leipzig"],"lados":[{"nome":"Bayer Leverkusen","forma":"DEDVE","nota":"10 pró · 9 contra nos últimos 5"},{"nome":"RB Leipzig","forma":"VDVDV","nota":"12 pró · 8 contra nos últimos 5"}],"destaques":[{"r":"Gols esperados","v":"2,0 × 1,4"},{"r":"Total esperado","v":"3,4 gols"},{"r":"Placar mais provável","v":"1 x 1 (10%)"}]},"fav":null,"contexto":[]},{"id":"401841246","torneio":"brasileirao","nome_torneio":"Brasileirão Série A","esporte":"futebol","dia":"2026-09-20","hora":"11:00","estado":"ao_vivo","titulo":"Grêmio × Palmeiras","detalhe":"","placar":null,"oportunidades":[],"pode_acontecer":"Modelo: Grêmio 23% · empate 27% · Palmeiras 50%. Gols esperados: 0,9 × 1,5. Placar mais provável: 1 x 1 (13%).","observacoes":["Grêmio: ataque 3% abaixo da média, gols sofridos 3% acima da média (82 jogos na base). Últimos 5: DVDDD, 6 gols pró e 8 contra.","Palmeiras: ataque 37% acima da média, gols sofridos 35% abaixo da média (80 jogos na base). Últimos 5: DVEEV, 9 gols pró e 5 contra.","Mando de campo na base do torneio: em confronto equilibrado o mandante marca 41% a mais que o visitante."],"resumo":"Grêmio × Palmeiras (Brasileirão Série A): leve favoritismo para Palmeiras, com volume de gols na média (total esperado de 2,5 gols).","sem_modelo":null,"vitrine":{"modo":"1x2","p":[0.2283,0.2741,0.4976],"rotulos":["Grêmio","Empate","Palmeiras"],"lados":[{"nome":"Grêmio","forma":"DVDDD","nota":"6 pró · 8 contra nos últimos 5"},{"nome":"Palmeiras","forma":"DVEEV","nota":"9 pró · 5 contra nos últimos 5"}],"destaques":[{"r":"Gols esperados","v":"0,9 × 1,5"},{"r":"Total esperado","v":"2,5 gols"},{"r":"Placar mais provável","v":"1 x 1 (13%)"}]},"fav":null,"contexto":[{"texto":"Palmeiras sem o zagueiro Murilo (suspenso pelo terceiro amarelo), sem Paulinho (lesão) e sem o técnico Abel Ferreira no banco (punição). Grêmio com Marlon e Dodi no departamento médico, sem suspensos. Resultado de busca na web, não conferido em segunda fonte.","fonte":"Portal do Palestra","url":"https://portaldopalestra.com.br/desfalques-gremio-palmeiras-brasileirao-2026/","data":"2026-09-19"}]},{"id":"401882865","torneio":"la-liga","nome_torneio":"La Liga","esporte":"futebol","dia":"2026-09-20","hora":"11:15","estado":"ao_vivo","titulo":"Atlético Madrid × Real Madrid","detalhe":"","placar":null,"oportunidades":[],"pode_acontecer":"Modelo: Atlético Madrid 38% · empate 26% · Real Madrid 36%. Gols esperados: 1,5 × 1,5. Placar mais provável: 1 x 1 (12%).","observacoes":["Atlético Madrid: ataque 31% acima da média, gols sofridos 21% abaixo da média (81 jogos na base). Últimos 5: EVDVV, 12 gols pró e 6 contra.","Real Madrid: ataque 56% acima da média, gols sofridos 28% abaixo da média (81 jogos na base). Últimos 5: VVDVV, 15 gols pró e 5 contra.","Mando de campo na base do torneio: em confronto equilibrado o mandante marca 35% a mais que o visitante."],"resumo":"Atlético Madrid × Real Madrid (La Liga): jogo equilibrado, com volume de gols na média (total esperado de 3,0 gols).","sem_modelo":null,"vitrine":{"modo":"1x2","p":[0.3806,0.2589,0.3605],"rotulos":["Atlético Madrid","Empate","Real Madrid"],"lados":[{"nome":"Atlético Madrid","forma":"EVDVV","nota":"12 pró · 6 contra nos últimos 5"},{"nome":"Real Madrid","forma":"VVDVV","nota":"15 pró · 5 contra nos últimos 5"}],"destaques":[{"r":"Gols esperados","v":"1,5 × 1,5"},{"r":"Total esperado","v":"3,0 gols"},{"r":"Placar mais provável","v":"1 x 1 (12%)"}]},"fav":null,"contexto":[]},{"id":"401885437","torneio":"portugal","nome_torneio":"Liga Portugal","esporte":"futebol","dia":"2026-09-20","hora":"11:30","estado":"ao_vivo","titulo":"Estrela × Académico de Viseu","detalhe":"","placar":null,"oportunidades":[],"pode_acontecer":null,"observacoes":[],"resumo":null,"sem_modelo":null,"vitrine":null,"contexto":[]},{"id":"401885430","torneio":"portugal","nome_torneio":"Liga Portugal","esporte":"futebol","dia":"2026-09-20","hora":"11:30","estado":"ao_vivo","titulo":"Vitória de Guimaraes × Moreirense","detalhe":"","placar":null,"oportunidades":[],"pode_acontecer":"Modelo: Vitória de Guimaraes 45% · empate 28% · Moreirense 27%. Gols esperados: 1,4 × 1,0. Placar mais provável: 1 x 1 (13%).","observacoes":["Vitória de Guimaraes: ataque 11% abaixo da média, gols sofridos 2% abaixo da média (72 jogos na base). Últimos 5: DVDED, 4 gols pró e 6 contra.","Moreirense: ataque 12% abaixo da média, gols sofridos 12% acima da média (72 jogos na base). Últimos 5: DVDDV, 5 gols pró e 11 contra.","Mando de campo na base do torneio: em confronto equilibrado o mandante marca 19% a mais que o visitante."],"resumo":"Vitória de Guimaraes × Moreirense (Liga Portugal): jogo equilibrado, com volume de gols na média (total esperado de 2,5 gols).","sem_modelo":null,"vitrine":{"modo":"1x2","p":[0.4516,0.282,0.2664],"rotulos":["Vitória de Guimaraes","Empate","Moreirense"],"lados":[{"nome":"Vitória de Guimaraes","forma":"DVDED","nota":"4 pró · 6 contra nos últimos 5"},{"nome":"Moreirense","forma":"DVDDV","nota":"5 pró · 11 contra nos últimos 5"}],"destaques":[{"r":"Gols esperados","v":"1,4 × 1,0"},{"r":"Total esperado","v":"2,5 gols"},{"r":"Placar mais provável","v":"1 x 1 (13%)"}]},"fav":null,"contexto":[]},{"id":"401876452","torneio":"ligue1","nome_torneio":"Ligue 1","esporte":"futebol","dia":"2026-09-20","hora":"12:15","estado":"pre","titulo":"Nice × Lille","detalhe":"","placar":null,"oportunidades":[{"codigo":"fora_+1.5","texto":"Lille com handicap +1,5 (perde por no máximo 1)","p":0.9174,"p_bruta":0.9101,"fator":1.04,"taxa_base":0.7599,"porque":"Gols esperados 1,0 × 1,4; vitória/empate/derrota do mandante 25%/29%/47%. No torneio, este mercado bate em 76% dos jogos sem modelo nenhum; o modelo dá 91,7% (bruta 91,0%, fator 1,04).","leitura":"Gols esperados 1,0 × 1,4; vitória/empate/derrota do mandante 25%/29%/47%.","calculo":"No torneio, este mercado bate em 76% dos jogos sem modelo nenhum; o modelo dá 91,7% (bruta 91,0%, fator 1,04)."},{"codigo":"casa_menos_2.5","texto":"Nice marca no máximo 2 gols","p":0.909,"p_bruta":0.928,"fator":0.9,"taxa_base":0.7599,"porque":"Gols esperados 1,0 × 1,4; vitória/empate/derrota do mandante 25%/29%/47%. No torneio, este mercado bate em 76% dos jogos sem modelo nenhum; o modelo dá 90,9% (bruta 92,8%, fator 0,90).","leitura":"Gols esperados 1,0 × 1,4; vitória/empate/derrota do mandante 25%/29%/47%.","calculo":"No torneio, este mercado bate em 76% dos jogos sem modelo nenhum; o modelo dá 90,9% (bruta 92,8%, fator 0,90)."}],"pode_acontecer":"Modelo: Nice 25% · empate 29% · Lille 47%. Gols esperados: 1,0 × 1,4. Placar mais provável: 1 x 1 (13%).","observacoes":["Nice: ataque 13% abaixo da média, gols sofridos 1% acima da média (71 jogos na base). Últimos 5: EEDED, 1 gols pró e 5 contra.","Lille: ataque 6% acima da média, gols sofridos 32% abaixo da média (71 jogos na base). Últimos 5: DVEVV, 7 gols pró e 4 contra.","Mando de campo na base do torneio: em confronto equilibrado o mandante marca 23% a mais que o visitante."],"resumo":"Nice × Lille (Ligue 1): jogo equilibrado, com volume de gols na média (total esperado de 2,4 gols).","sem_modelo":null,"vitrine":{"modo":"1x2","p":[0.2482,0.286,0.4659],"rotulos":["Nice","Empate","Lille"],"lados":[{"nome":"Nice","forma":"EEDED","nota":"1 pró · 5 contra nos últimos 5"},{"nome":"Lille","forma":"DVEVV","nota":"7 pró · 4 contra nos últimos 5"}],"destaques":[{"r":"Gols esperados","v":"1,0 × 1,4"},{"r":"Total esperado","v":"2,4 gols"},{"r":"Placar mais provável","v":"1 x 1 (13%)"}]},"fav":null,"contexto":[{"texto":"Nice sem Bombito, Abergel, Antoine Mendy e Sanson, com Abdul Samed em dúvida; Lille viaja sem Nianzou e Igamane. 5ª rodada, no Allianz Riviera. Resultado de busca na web, não conferido em segunda fonte.","fonte":"Maxifoot","url":"https://news.maxifoot.fr/ligue-1/nice-lille-les-compos-probables-foot-464329.htm","data":"2026-09-20"}]},{"id":"401884783","torneio":"bundesliga","nome_torneio":"Bundesliga","esporte":"futebol","dia":"2026-09-20","hora":"12:30","estado":"pre","titulo":"Schalke 04 × SV Elversberg","detalhe":"","placar":null,"oportunidades":[],"pode_acontecer":null,"observacoes":[],"resumo":null,"sem_modelo":"Base insuficiente: algum dos lados tem menos jogos na base do que o mínimo do modelo. O robô não opina sobre este evento.","vitrine":null,"contexto":[]},{"id":"401878777","torneio":"premier","nome_torneio":"Premier League","esporte":"futebol","dia":"2026-09-20","hora":"12:30","estado":"pre","titulo":"Fulham × Manchester United","detalhe":"","placar":null,"oportunidades":[],"pode_acontecer":"Modelo: Fulham 34% · empate 27% · Manchester United 40%. Gols esperados: 1,3 × 1,5. Placar mais provável: 1 x 1 (13%).","observacoes":["Fulham: ataque 6% abaixo da média, gols sofridos 5% abaixo da média (79 jogos na base). Últimos 5: VDDDE, 6 gols pró e 7 contra.","Manchester United: ataque 22% acima da média, gols sofridos 5% abaixo da média (79 jogos na base). Últimos 5: VDVED, 10 gols pró e 7 contra.","Mando de campo na base do torneio: em confronto equilibrado o mandante marca 18% a mais que o visitante."],"resumo":"Fulham × Manchester United (Premier League): jogo equilibrado, com volume de gols na média (total esperado de 2,8 gols).","sem_modelo":null,"vitrine":{"modo":"1x2","p":[0.3362,0.2653,0.3985],"rotulos":["Fulham","Empate","Manchester United"],"lados":[{"nome":"Fulham","forma":"VDDDE","nota":"6 pró · 7 contra nos últimos 5"},{"nome":"Manchester United","forma":"VDVED","nota":"10 pró · 7 contra nos últimos 5"}],"destaques":[{"r":"Gols esperados","v":"1,3 × 1,5"},{"r":"Total esperado","v":"2,8 gols"},{"r":"Placar mais provável","v":"1 x 1 (13%)"}]},"fav":null,"contexto":[]},{"id":"401874757","torneio":"serie-a","nome_torneio":"Serie A (Itália)","esporte":"futebol","dia":"2026-09-20","hora":"13:00","estado":"pre","titulo":"Juventus × Atalanta","detalhe":"","placar":null,"oportunidades":[],"pode_acontecer":"Modelo: Juventus 40% · empate 29% · Atalanta 31%. Gols esperados: 1,3 × 1,1. Placar mais provável: 1 x 1 (14%).","observacoes":["Juventus: ataque 23% acima da média, gols sofridos 25% abaixo da média (79 jogos na base). Últimos 5: EVVED, 8 gols pró e 6 contra.","Atalanta: ataque 19% acima da média, gols sofridos 22% abaixo da média (79 jogos na base). Últimos 5: EVVDD, 6 gols pró e 6 contra.","Mando de campo na base do torneio: em confronto equilibrado o mandante marca 8% a mais que o visitante."],"resumo":"Juventus × Atalanta (Serie A (Itália)): jogo equilibrado, com volume de gols na média (total esperado de 2,4 gols).","sem_modelo":null,"vitrine":{"modo":"1x2","p":[0.3967,0.2934,0.3099],"rotulos":["Juventus","Empate","Atalanta"],"lados":[{"nome":"Juventus","forma":"EVVED","nota":"8 pró · 6 contra nos últimos 5"},{"nome":"Atalanta","forma":"EVVDD","nota":"6 pró · 6 contra nos últimos 5"}],"destaques":[{"r":"Gols esperados","v":"1,3 × 1,1"},{"r":"Total esperado","v":"2,4 gols"},{"r":"Placar mais provável","v":"1 x 1 (14%)"}]},"fav":null,"contexto":[]},{"id":"401882863","torneio":"la-liga","nome_torneio":"La Liga","esporte":"futebol","dia":"2026-09-20","hora":"13:30","estado":"pre","titulo":"Deportivo × Real Betis","detalhe":"","placar":null,"oportunidades":[],"pode_acontecer":null,"observacoes":[],"resumo":null,"sem_modelo":"Base insuficiente: algum dos lados tem menos jogos na base do que o mínimo do modelo. O robô não opina sobre este evento.","vitrine":null,"contexto":[]},{"id":"401882857","torneio":"la-liga","nome_torneio":"La Liga","esporte":"futebol","dia":"2026-09-20","hora":"13:30","estado":"pre","titulo":"Villarreal × Levante","detalhe":"","placar":null,"oportunidades":[{"codigo":"casa_marca","texto":"Villarreal marca ao menos 1 gol","p":0.925,"p_bruta":0.911,"fator":1.08,"taxa_base":0.8099,"porque":"Gols esperados 2,4 × 1,1; vitória/empate/derrota do mandante 65%/19%/16%. No torneio, este mercado bate em 81% dos jogos sem modelo nenhum; o modelo dá 92,5% (bruta 91,1%, fator 1,08).","leitura":"Gols esperados 2,4 × 1,1; vitória/empate/derrota do mandante 65%/19%/16%.","calculo":"No torneio, este mercado bate em 81% dos jogos sem modelo nenhum; o modelo dá 92,5% (bruta 91,1%, fator 1,08)."}],"pode_acontecer":"Modelo: Villarreal 65% · empate 19% · Levante 16%. Gols esperados: 2,4 × 1,1. Placar mais provável: 2 x 1 (10%).","observacoes":["Villarreal: ataque 38% acima da média, gols sofridos 5% abaixo da média (81 jogos na base). Últimos 5: EDDDV, 8 gols pró e 9 contra.","Levante: ataque 0% acima da média, gols sofridos 10% acima da média (43 jogos na base). Últimos 5: DEVED, 7 gols pró e 9 contra.","Mando de campo na base do torneio: em confronto equilibrado o mandante marca 35% a mais que o visitante."],"resumo":"Villarreal × Levante (La Liga): favorito claro para Villarreal, com tendência de muitos gols (total esperado de 3,6 gols).","sem_modelo":null,"vitrine":{"modo":"1x2","p":[0.6531,0.1899,0.157],"rotulos":["Villarreal","Empate","Levante"],"lados":[{"nome":"Villarreal","forma":"EDDDV","nota":"8 pró · 9 contra nos últimos 5"},{"nome":"Levante","forma":"DEVED","nota":"7 pró · 9 contra nos últimos 5"}],"destaques":[{"r":"Gols esperados","v":"2,4 × 1,1"},{"r":"Total esperado","v":"3,6 gols"},{"r":"Placar mais provável","v":"2 x 1 (10%)"}]},"fav":null,"contexto":[{"texto":"Villarreal só com Juan Foyth fora (lesão). Levante sem Hugo Sotelo, Álex Primo e o atacante Etta Eyong, lesionados. 7ª rodada, no Estadio de la Cerámica; os dois chegam empatados em pontos. Resultado de busca na web, não conferido em segunda fonte.","fonte":"FútbolFantasy","url":"https://www.futbolfantasy.com/partidos/22492-villarreal-levante","data":"2026-09-20"}]},{"id":"401885436","torneio":"portugal","nome_torneio":"Liga Portugal","esporte":"futebol","dia":"2026-09-20","hora":"14:00","estado":"pre","titulo":"Estoril × Casa Pia","detalhe":"","placar":null,"oportunidades":[],"pode_acontecer":"Modelo: Estoril 57% · empate 24% · Casa Pia 19%. Gols esperados: 1,8 × 0,9. Placar mais provável: 1 x 1 (12%).","observacoes":["Estoril: ataque 5% acima da média, gols sofridos 12% acima da média (72 jogos na base). Últimos 5: DDDED, 1 gols pró e 7 contra.","Casa Pia: ataque 30% abaixo da média, gols sofridos 20% acima da média (72 jogos na base). Últimos 5: DDDED, 1 gols pró e 14 contra.","Mando de campo na base do torneio: em confronto equilibrado o mandante marca 19% a mais que o visitante."],"resumo":"Estoril × Casa Pia (Liga Portugal): leve favoritismo para Estoril, com volume de gols na média (total esperado de 2,7 gols).","sem_modelo":null,"vitrine":{"modo":"1x2","p":[0.5705,0.2424,0.1871],"rotulos":["Estoril","Empate","Casa Pia"],"lados":[{"nome":"Estoril","forma":"DDDED","nota":"1 pró · 7 contra nos últimos 5"},{"nome":"Casa Pia","forma":"DDDED","nota":"1 pró · 14 contra nos últimos 5"}],"destaques":[{"r":"Gols esperados","v":"1,8 × 0,9"},{"r":"Total esperado","v":"2,7 gols"},{"r":"Placar mais provável","v":"1 x 1 (12%)"}]},"fav":null,"contexto":[]},{"id":"401885432","torneio":"portugal","nome_torneio":"Liga Portugal","esporte":"futebol","dia":"2026-09-20","hora":"14:00","estado":"pre","titulo":"Santa Clara × Braga","detalhe":"","placar":null,"oportunidades":[{"codigo":"casa_menos_2.5","texto":"Santa Clara marca no máximo 2 gols","p":0.9021,"p_bruta":0.9218,"fator":0.9,"taxa_base":0.7887,"porque":"Gols esperados 1,0 × 1,2; vitória/empate/derrota do mandante 29%/30%/41%. No torneio, este mercado bate em 79% dos jogos sem modelo nenhum; o modelo dá 90,2% (bruta 92,2%, fator 0,90).","leitura":"Gols esperados 1,0 × 1,2; vitória/empate/derrota do mandante 29%/30%/41%.","calculo":"No torneio, este mercado bate em 79% dos jogos sem modelo nenhum; o modelo dá 90,2% (bruta 92,2%, fator 0,90)."}],"pode_acontecer":"Modelo: Santa Clara 29% · empate 30% · Braga 41%. Gols esperados: 1,0 × 1,2. Placar mais provável: 1 x 1 (14%).","observacoes":["Santa Clara: ataque 12% abaixo da média, gols sofridos 21% abaixo da média (72 jogos na base). Últimos 5: VVEVV, 9 gols pró e 2 contra.","Braga: ataque 30% acima da média, gols sofridos 21% abaixo da média (71 jogos na base). Últimos 5: EVVDV, 7 gols pró e 5 contra.","Mando de campo na base do torneio: em confronto equilibrado o mandante marca 19% a mais que o visitante."],"resumo":"Santa Clara × Braga (Liga Portugal): jogo equilibrado, com volume de gols na média (total esperado de 2,2 gols).","sem_modelo":null,"vitrine":{"modo":"1x2","p":[0.2874,0.3026,0.41],"rotulos":["Santa Clara","Empate","Braga"],"lados":[{"nome":"Santa Clara","forma":"VVEVV","nota":"9 pró · 2 contra nos últimos 5"},{"nome":"Braga","forma":"EVVDV","nota":"7 pró · 5 contra nos últimos 5"}],"destaques":[{"r":"Gols esperados","v":"1,0 × 1,2"},{"r":"Total esperado","v":"2,2 gols"},{"r":"Placar mais provável","v":"1 x 1 (14%)"}]},"fav":null,"contexto":[{"texto":"Braga segue sem Sekou Niakaté (tendão de Aquiles) e tem Ricardo Horta de volta após problema muscular. No Santa Clara, Paciência (5 gols na liga) deve comandar o ataque. Resultado de busca na web, não conferido em segunda fonte.","fonte":"Sports Mole","url":"https://www.sportsmole.co.uk/football/braga/preview/santa-clara-vs-braga-prediction-team-news-lineups_605450.html","data":"2026-09-20"}]},{"id":"401872933","torneio":"nfl","nome_torneio":"NFL","esporte":"nfl","dia":"2026-09-20","hora":"14:00","estado":"pre","titulo":"Atlanta Falcons × Carolina Panthers","detalhe":"","placar":null,"oportunidades":[],"pode_acontecer":"Modelo: Atlanta Falcons vence com 61%. Margem esperada: 4,0 pontos a favor de Atlanta Falcons (desvio de 13,1). Total esperado: 47,3 pontos (desvio de 13,5).","observacoes":["Atlanta Falcons: rating 1456 (52 jogos na base). Últimos 5: VDVVD, média de 18,0 pontos feitos e 16,4 sofridos.","Carolina Panthers: rating 1403 (53 jogos na base). Últimos 5: VDVVD, média de 26,8 pontos feitos e 29,6 sofridos.","O desvio é o erro do próprio modelo medido nos jogos já encerrados, não um número escolhido."],"resumo":"Carolina Panthers em Atlanta Falcons pela NFL: jogo aberto.","sem_modelo":null,"vitrine":{"modo":"duelo","p":[0.6059,null,0.3941],"rotulos":["Atlanta Falcons",null,"Carolina Panthers"],"lados":[{"nome":"Atlanta Falcons","forma":"VDVVD","nota":"18,0 pts feitos · 16,4 sofridos nos últimos 5"},{"nome":"Carolina Panthers","forma":"VDVVD","nota":"26,8 pts feitos · 29,6 sofridos nos últimos 5"}],"destaques":[{"r":"Margem esperada","v":"4,0 pts para Atlanta Falcons"},{"r":"Total esperado","v":"47,3 pts"},{"r":"Erro do modelo","v":"± 13,1 na margem"}]},"fav":"casa","contexto":[]},{"id":"401872938","torneio":"nfl","nome_torneio":"NFL","esporte":"nfl","dia":"2026-09-20","hora":"14:00","estado":"pre","titulo":"Baltimore Ravens × New Orleans Saints","detalhe":"","placar":null,"oportunidades":[],"pode_acontecer":"Modelo: Baltimore Ravens vence com 70%. Margem esperada: 7,3 pontos a favor de Baltimore Ravens (desvio de 13,1). Total esperado: 46,0 pontos (desvio de 13,5).","observacoes":["Baltimore Ravens: rating 1567 (56 jogos na base). Últimos 5: DVVVV, média de 28,6 pontos feitos e 12,4 sofridos.","New Orleans Saints: rating 1434 (52 jogos na base). Últimos 5: DDDVD, média de 18,8 pontos feitos e 26,4 sofridos.","O desvio é o erro do próprio modelo medido nos jogos já encerrados, não um número escolhido."],"resumo":"New Orleans Saints em Baltimore Ravens pela NFL: favorito claro para Baltimore Ravens.","sem_modelo":null,"vitrine":{"modo":"duelo","p":[0.6973,null,0.3027],"rotulos":["Baltimore Ravens",null,"New Orleans Saints"],"lados":[{"nome":"Baltimore Ravens","forma":"DVVVV","nota":"28,6 pts feitos · 12,4 sofridos nos últimos 5"},{"nome":"New Orleans Saints","forma":"DDDVD","nota":"18,8 pts feitos · 26,4 sofridos nos últimos 5"}],"destaques":[{"r":"Margem esperada","v":"7,3 pts para Baltimore Ravens"},{"r":"Total esperado","v":"46,0 pts"},{"r":"Erro do modelo","v":"± 13,1 na margem"}]},"fav":"casa","contexto":[]},{"id":"401872937","torneio":"nfl","nome_torneio":"NFL","esporte":"nfl","dia":"2026-09-20","hora":"14:00","estado":"pre","titulo":"Chicago Bears × Minnesota Vikings","detalhe":"","placar":null,"oportunidades":[],"pode_acontecer":"Modelo: Chicago Bears vence com 52%. Margem esperada: 1,3 pontos a favor de Chicago Bears (desvio de 13,1). Total esperado: 46,7 pontos (desvio de 13,5).","observacoes":["Chicago Bears: rating 1556 (54 jogos na base). Últimos 5: DVDVV, média de 28,6 pontos feitos e 21,8 sofridos.","Minnesota Vikings: rating 1572 (53 jogos na base). Últimos 5: VVDDV, média de 15,4 pontos feitos e 16,4 sofridos.","O desvio é o erro do próprio modelo medido nos jogos já encerrados, não um número escolhido."],"resumo":"Minnesota Vikings em Chicago Bears pela NFL: jogo aberto.","sem_modelo":null,"vitrine":{"modo":"duelo","p":[0.5233,null,0.4767],"rotulos":["Chicago Bears",null,"Minnesota Vikings"],"lados":[{"nome":"Chicago Bears","forma":"DVDVV","nota":"28,6 pts feitos · 21,8 sofridos nos últimos 5"},{"nome":"Minnesota Vikings","forma":"VVDDV","nota":"15,4 pts feitos · 16,4 sofridos nos últimos 5"}],"destaques":[{"r":"Margem esperada","v":"1,3 pts para Chicago Bears"},{"r":"Total esperado","v":"46,7 pts"},{"r":"Erro do modelo","v":"± 13,1 na margem"}]},"fav":"casa","contexto":[]},{"id":"401872934","torneio":"nfl","nome_torneio":"NFL","esporte":"nfl","dia":"2026-09-20","hora":"14:00","estado":"pre","titulo":"Houston Texans × Cincinnati Bengals","detalhe":"","placar":null,"oportunidades":[],"pode_acontecer":"Modelo: Houston Texans vence com 65%. Margem esperada: 5,5 pontos a favor de Houston Texans (desvio de 13,1). Total esperado: 49,6 pontos (desvio de 13,5).","observacoes":["Houston Texans: rating 1583 (58 jogos na base). Últimos 5: DDDDD, média de 17,4 pontos feitos e 25,8 sofridos.","Cincinnati Bengals: rating 1493 (52 jogos na base). Últimos 5: DVVVV, média de 24,8 pontos feitos e 16,6 sofridos.","O desvio é o erro do próprio modelo medido nos jogos já encerrados, não um número escolhido."],"resumo":"Cincinnati Bengals em Houston Texans pela NFL: jogo aberto.","sem_modelo":null,"vitrine":{"modo":"duelo","p":[0.6489,null,0.3511],"rotulos":["Houston Texans",null,"Cincinnati Bengals"],"lados":[{"nome":"Houston Texans","forma":"DDDDD","nota":"17,4 pts feitos · 25,8 sofridos nos últimos 5"},{"nome":"Cincinnati Bengals","forma":"DVVVV","nota":"24,8 pts feitos · 16,6 sofridos nos últimos 5"}],"destaques":[{"r":"Margem esperada","v":"5,5 pts para Houston Texans"},{"r":"Total esperado","v":"49,6 pts"},{"r":"Erro do modelo","v":"± 13,1 na margem"}]},"fav":"casa","contexto":[]},{"id":"401872946","torneio":"nfl","nome_torneio":"NFL","esporte":"nfl","dia":"2026-09-20","hora":"14:00","estado":"pre","titulo":"New England Patriots × Pittsburgh Steelers","detalhe":"","placar":null,"oportunidades":[],"pode_acontecer":"Modelo: New England Patriots vence com 62%. Margem esperada: 4,5 pontos a favor de New England Patriots (desvio de 13,1). Total esperado: 40,7 pontos (desvio de 13,5).","observacoes":["New England Patriots: rating 1587 (56 jogos na base). Últimos 5: DEVDD, média de 14,6 pontos feitos e 22,6 sofridos.","Pittsburgh Steelers: rating 1523 (55 jogos na base). Últimos 5: DVDDV, média de 16,2 pontos feitos e 19,4 sofridos.","O desvio é o erro do próprio modelo medido nos jogos já encerrados, não um número escolhido."],"resumo":"Pittsburgh Steelers em New England Patriots pela NFL: jogo aberto.","sem_modelo":null,"vitrine":{"modo":"duelo","p":[0.619,null,0.381],"rotulos":["New England Patriots",null,"Pittsburgh Steelers"],"lados":[{"nome":"New England Patriots","forma":"DEVDD","nota":"14,6 pts feitos · 22,6 sofridos nos últimos 5"},{"nome":"Pittsburgh Steelers","forma":"DVDDV","nota":"16,2 pts feitos · 19,4 sofridos nos últimos 5"}],"destaques":[{"r":"Margem esperada","v":"4,5 pts para New England Patriots"},{"r":"Total esperado","v":"40,7 pts"},{"r":"Erro do modelo","v":"± 13,1 na margem"}]},"fav":"casa","contexto":[]},{"id":"401872936","torneio":"nfl","nome_torneio":"NFL","esporte":"nfl","dia":"2026-09-20","hora":"14:00","estado":"pre","titulo":"New York Jets × Green Bay Packers","detalhe":"","placar":null,"oportunidades":[],"pode_acontecer":"Modelo: Green Bay Packers vence com 56%. Margem esperada: 2,6 pontos a favor de Green Bay Packers (desvio de 13,1). Total esperado: 46,2 pontos (desvio de 13,5).","observacoes":["New York Jets: rating 1390 (52 jogos na base). Últimos 5: DDVDV, média de 14,0 pontos feitos e 18,4 sofridos.","Green Bay Packers: rating 1502 (56 jogos na base). Últimos 5: DDVVD, média de 26,6 pontos feitos e 29,8 sofridos.","O desvio é o erro do próprio modelo medido nos jogos já encerrados, não um número escolhido."],"resumo":"Green Bay Packers em New York Jets pela NFL: jogo aberto.","sem_modelo":null,"vitrine":{"modo":"duelo","p":[0.4376,null,0.5624],"rotulos":["New York Jets",null,"Green Bay Packers"],"lados":[{"nome":"New York Jets","forma":"DDVDV","nota":"14,0 pts feitos · 18,4 sofridos nos últimos 5"},{"nome":"Green Bay Packers","forma":"DDVVD","nota":"26,6 pts feitos · 29,8 sofridos nos últimos 5"}],"destaques":[{"r":"Margem esperada","v":"2,6 pts para Green Bay Packers"},{"r":"Total esperado","v":"46,2 pts"},{"r":"Erro do modelo","v":"± 13,1 na margem"}]},"fav":"fora","contexto":[]},{"id":"401872935","torneio":"nfl","nome_torneio":"NFL","esporte":"nfl","dia":"2026-09-20","hora":"14:00","estado":"pre","titulo":"Tampa Bay Buccaneers × Cleveland Browns","detalhe":"","placar":null,"oportunidades":[],"pode_acontecer":"Modelo: Tampa Bay Buccaneers vence com 61%. Margem esperada: 4,1 pontos a favor de Tampa Bay Buccaneers (desvio de 13,1). Total esperado: 42,7 pontos (desvio de 13,5).","observacoes":["Tampa Bay Buccaneers: rating 1460 (55 jogos na base). Últimos 5: VVVDD, média de 16,6 pontos feitos e 19,4 sofridos.","Cleveland Browns: rating 1406 (53 jogos na base). Últimos 5: VDDVD, média de 16,8 pontos feitos e 26,0 sofridos.","O desvio é o erro do próprio modelo medido nos jogos já encerrados, não um número escolhido."],"resumo":"Cleveland Browns em Tampa Bay Buccaneers pela NFL: jogo aberto.","sem_modelo":null,"vitrine":{"modo":"duelo","p":[0.6076,null,0.3924],"rotulos":["Tampa Bay Buccaneers",null,"Cleveland Browns"],"lados":[{"nome":"Tampa Bay Buccaneers","forma":"VVVDD","nota":"16,6 pts feitos · 19,4 sofridos nos últimos 5"},{"nome":"Cleveland Browns","forma":"VDDVD","nota":"16,8 pts feitos · 26,0 sofridos nos últimos 5"}],"destaques":[{"r":"Margem esperada","v":"4,1 pts para Tampa Bay Buccaneers"},{"r":"Total esperado","v":"42,7 pts"},{"r":"Erro do modelo","v":"± 13,1 na margem"}]},"fav":"casa","contexto":[]},{"id":"401872939","torneio":"nfl","nome_torneio":"NFL","esporte":"nfl","dia":"2026-09-20","hora":"14:00","estado":"pre","titulo":"Tennessee Titans × Philadelphia Eagles","detalhe":"","placar":null,"oportunidades":[],"pode_acontecer":"Modelo: Philadelphia Eagles vence com 70%. Margem esperada: 7,4 pontos a favor de Philadelphia Eagles (desvio de 13,1). Total esperado: 43,1 pontos (desvio de 13,5).","observacoes":["Tennessee Titans: rating 1327 (52 jogos na base). Últimos 5: DVVDD, média de 14,0 pontos feitos e 23,4 sofridos.","Philadelphia Eagles: rating 1560 (58 jogos na base). Últimos 5: DDDDV, média de 16,8 pontos feitos e 24,6 sofridos.","O desvio é o erro do próprio modelo medido nos jogos já encerrados, não um número escolhido."],"resumo":"Philadelphia Eagles em Tennessee Titans pela NFL: favorito claro para Philadelphia Eagles.","sem_modelo":null,"vitrine":{"modo":"duelo","p":[0.2993,null,0.7007],"rotulos":["Tennessee Titans",null,"Philadelphia Eagles"],"lados":[{"nome":"Tennessee Titans","forma":"DVVDD","nota":"14,0 pts feitos · 23,4 sofridos nos últimos 5"},{"nome":"Philadelphia Eagles","forma":"DDDDV","nota":"16,8 pts feitos · 24,6 sofridos nos últimos 5"}],"destaques":[{"r":"Margem esperada","v":"7,4 pts para Philadelphia Eagles"},{"r":"Total esperado","v":"43,1 pts"},{"r":"Erro do modelo","v":"± 13,1 na margem"}]},"fav":"fora","contexto":[]},{"id":"401884782","torneio":"bundesliga","nome_torneio":"Bundesliga","esporte":"futebol","dia":"2026-09-20","hora":"14:30","estado":"pre","titulo":"SC Paderborn 07 × TSG Hoffenheim","detalhe":"","placar":null,"oportunidades":[],"pode_acontecer":null,"observacoes":[],"resumo":null,"sem_modelo":"Base insuficiente: algum dos lados tem menos jogos na base do que o mínimo do modelo. O robô não opina sobre este evento.","vitrine":null,"contexto":[]},{"id":"401876449","torneio":"ligue1","nome_torneio":"Ligue 1","esporte":"futebol","dia":"2026-09-20","hora":"15:45","estado":"pre","titulo":"Marseille × Paris Saint-Germain","detalhe":"","placar":null,"oportunidades":[],"pode_acontecer":"Modelo: Marseille 29% · empate 24% · Paris Saint-Germain 48%. Gols esperados: 1,4 × 1,9. Placar mais provável: 1 x 1 (10%).","observacoes":["Marseille: ataque 30% acima da média, gols sofridos 7% abaixo da média (71 jogos na base). Últimos 5: VVDDD, 9 gols pró e 7 contra.","Paris Saint-Germain: ataque 54% acima da média, gols sofridos 31% abaixo da média (71 jogos na base). Últimos 5: DEEDV, 7 gols pró e 8 contra.","Mando de campo na base do torneio: em confronto equilibrado o mandante marca 23% a mais que o visitante."],"resumo":"Marseille × Paris Saint-Germain (Ligue 1): jogo equilibrado, com tendência de muitos gols (total esperado de 3,3 gols).","sem_modelo":null,"vitrine":{"modo":"1x2","p":[0.2887,0.2361,0.4753],"rotulos":["Marseille","Empate","Paris Saint-Germain"],"lados":[{"nome":"Marseille","forma":"VVDDD","nota":"9 pró · 7 contra nos últimos 5"},{"nome":"Paris Saint-Germain","forma":"DEEDV","nota":"7 pró · 8 contra nos últimos 5"}],"destaques":[{"r":"Gols esperados","v":"1,4 × 1,9"},{"r":"Total esperado","v":"3,3 gols"},{"r":"Placar mais provável","v":"1 x 1 (10%)"}]},"fav":null,"contexto":[]},{"id":"401874944","torneio":"serie-a","nome_torneio":"Serie A (Itália)","esporte":"futebol","dia":"2026-09-20","hora":"15:45","estado":"pre","titulo":"AC Milan × Lecce","detalhe":"","placar":null,"oportunidades":[{"codigo":"casa_+1.5","texto":"AC Milan com handicap +1,5 (perde por no máximo 1)","p":0.9726,"p_bruta":0.9603,"fator":1.12,"taxa_base":0.842,"porque":"Gols esperados 1,6 × 0,7; vitória/empate/derrota do mandante 60%/26%/14%. No torneio, este mercado bate em 84% dos jogos sem modelo nenhum; o modelo dá 97,3% (bruta 96,0%, fator 1,12).","leitura":"Gols esperados 1,6 × 0,7; vitória/empate/derrota do mandante 60%/26%/14%.","calculo":"No torneio, este mercado bate em 84% dos jogos sem modelo nenhum; o modelo dá 97,3% (bruta 96,0%, fator 1,12)."}],"pode_acontecer":"Modelo: AC Milan 60% · empate 26% · Lecce 14%. Gols esperados: 1,6 × 0,7. Placar mais provável: 1 x 0 (16%).","observacoes":["AC Milan: ataque 16% acima da média, gols sofridos 20% abaixo da média (79 jogos na base). Últimos 5: DVVEE, 8 gols pró e 6 contra.","Lecce: ataque 32% abaixo da média, gols sofridos 5% acima da média (79 jogos na base). Últimos 5: VVDDV, 6 gols pró e 7 contra.","Mando de campo na base do torneio: em confronto equilibrado o mandante marca 8% a mais que o visitante."],"resumo":"AC Milan × Lecce (Serie A (Itália)): leve favoritismo para AC Milan, com volume de gols na média (total esperado de 2,3 gols).","sem_modelo":null,"vitrine":{"modo":"1x2","p":[0.5966,0.2585,0.1449],"rotulos":["AC Milan","Empate","Lecce"],"lados":[{"nome":"AC Milan","forma":"DVVEE","nota":"8 pró · 6 contra nos últimos 5"},{"nome":"Lecce","forma":"VVDDV","nota":"6 pró · 7 contra nos últimos 5"}],"destaques":[{"r":"Gols esperados","v":"1,6 × 0,7"},{"r":"Total esperado","v":"2,3 gols"},{"r":"Placar mais provável","v":"1 x 0 (16%)"}]},"fav":null,"contexto":[{"texto":"Milan vem de dois empates (Juventus e Lazio) e derrota para o Benfica, com ambiente tenso em torno do técnico Amorim; provável com Maignan, Modric, Rabiot e Pulisic. Lecce vem de vitória em casa sobre o Monza, 12º com 6 pontos. Resultado de busca na web, não conferido em segunda fonte.","fonte":"Il Sussidiario","url":"https://www.ilsussidiario.net/news/probabili-formazioni-milan-lecce-quote-ci-sara-pulisic-serie-a-oggi-20-settembre-2026/3000276/","data":"2026-09-20"}]},{"id":"401841240","torneio":"brasileirao","nome_torneio":"Brasileirão Série A","esporte":"futebol","dia":"2026-09-20","hora":"16:00","estado":"pre","titulo":"Corinthians × Fluminense","detalhe":"","placar":null,"oportunidades":[],"pode_acontecer":"Modelo: Corinthians 39% · empate 30% · Fluminense 30%. Gols esperados: 1,2 × 1,0. Placar mais provável: 1 x 1 (14%).","observacoes":["Corinthians: ataque 6% abaixo da média, gols sofridos 15% abaixo da média (80 jogos na base). Últimos 5: DDDDD, 4 gols pró e 9 contra.","Fluminense: ataque 12% acima da média, gols sofridos 15% abaixo da média (81 jogos na base). Últimos 5: VVEVD, 10 gols pró e 9 contra.","Mando de campo na base do torneio: em confronto equilibrado o mandante marca 41% a mais que o visitante."],"resumo":"Corinthians × Fluminense (Brasileirão Série A): jogo equilibrado, com volume de gols na média (total esperado de 2,2 gols).","sem_modelo":null,"vitrine":{"modo":"1x2","p":[0.3946,0.3033,0.3021],"rotulos":["Corinthians","Empate","Fluminense"],"lados":[{"nome":"Corinthians","forma":"DDDDD","nota":"4 pró · 9 contra nos últimos 5"},{"nome":"Fluminense","forma":"VVEVD","nota":"10 pró · 9 contra nos últimos 5"}],"destaques":[{"r":"Gols esperados","v":"1,2 × 1,0"},{"r":"Total esperado","v":"2,2 gols"},{"r":"Placar mais provável","v":"1 x 1 (14%)"}]},"fav":null,"contexto":[]},{"id":"401841242","torneio":"brasileirao","nome_torneio":"Brasileirão Série A","esporte":"futebol","dia":"2026-09-20","hora":"16:00","estado":"pre","titulo":"Vitória × Cruzeiro","detalhe":"","placar":null,"oportunidades":[],"pode_acontecer":"Modelo: Vitória 32% · empate 30% · Cruzeiro 38%. Gols esperados: 1,1 × 1,2. Placar mais provável: 1 x 1 (14%).","observacoes":["Vitória: ataque 18% abaixo da média, gols sofridos 1% abaixo da média (80 jogos na base). Últimos 5: VDDVE, 5 gols pró e 6 contra.","Cruzeiro: ataque 11% acima da média, gols sofridos 14% abaixo da média (81 jogos na base). Últimos 5: VVDVD, 9 gols pró e 8 contra.","Mando de campo na base do torneio: em confronto equilibrado o mandante marca 41% a mais que o visitante."],"resumo":"Vitória × Cruzeiro (Brasileirão Série A): jogo equilibrado, com volume de gols na média (total esperado de 2,2 gols).","sem_modelo":null,"vitrine":{"modo":"1x2","p":[0.3175,0.3033,0.3793],"rotulos":["Vitória","Empate","Cruzeiro"],"lados":[{"nome":"Vitória","forma":"VDDVE","nota":"5 pró · 6 contra nos últimos 5"},{"nome":"Cruzeiro","forma":"VVDVD","nota":"9 pró · 8 contra nos últimos 5"}],"destaques":[{"r":"Gols esperados","v":"1,1 × 1,2"},{"r":"Total esperado","v":"2,2 gols"},{"r":"Placar mais provável","v":"1 x 1 (14%)"}]},"fav":null,"contexto":[]},{"id":"401882858","torneio":"la-liga","nome_torneio":"La Liga","esporte":"futebol","dia":"2026-09-20","hora":"16:00","estado":"pre","titulo":"Valencia × Real Sociedad","detalhe":"","placar":null,"oportunidades":[],"pode_acontecer":"Modelo: Valencia 43% · empate 27% · Real Sociedad 30%. Gols esperados: 1,5 × 1,2. Placar mais provável: 1 x 1 (13%).","observacoes":["Valencia: ataque 14% abaixo da média, gols sofridos 2% abaixo da média (81 jogos na base). Últimos 5: DDDDV, 2 gols pró e 10 contra.","Real Sociedad: ataque 3% acima da média, gols sofridos 7% acima da média (81 jogos na base). Últimos 5: DVEVD, 6 gols pró e 10 contra.","Mando de campo na base do torneio: em confronto equilibrado o mandante marca 35% a mais que o visitante."],"resumo":"Valencia × Real Sociedad (La Liga): jogo equilibrado, com volume de gols na média (total esperado de 2,7 gols).","sem_modelo":null,"vitrine":{"modo":"1x2","p":[0.4259,0.2716,0.3025],"rotulos":["Valencia","Empate","Real Sociedad"],"lados":[{"nome":"Valencia","forma":"DDDDV","nota":"2 pró · 10 contra nos últimos 5"},{"nome":"Real Sociedad","forma":"DVEVD","nota":"6 pró · 10 contra nos últimos 5"}],"destaques":[{"r":"Gols esperados","v":"1,5 × 1,2"},{"r":"Total esperado","v":"2,7 gols"},{"r":"Placar mais provável","v":"1 x 1 (13%)"}]},"fav":null,"contexto":[]},{"id":"401885433","torneio":"portugal","nome_torneio":"Liga Portugal","esporte":"futebol","dia":"2026-09-20","hora":"16:30","estado":"pre","titulo":"FC Porto × Benfica","detalhe":"","placar":null,"oportunidades":[],"pode_acontecer":"Modelo: FC Porto 39% · empate 29% · Benfica 33%. Gols esperados: 1,3 × 1,2. Placar mais provável: 1 x 1 (14%).","observacoes":["FC Porto: ataque 43% acima da média, gols sofridos 46% abaixo da média (72 jogos na base). Últimos 5: VVVVV, 13 gols pró e 2 contra.","Benfica: ataque 82% acima da média, gols sofridos 37% abaixo da média (72 jogos na base). Últimos 5: VVVVV, 19 gols pró e 2 contra.","Mando de campo na base do torneio: em confronto equilibrado o mandante marca 19% a mais que o visitante."],"resumo":"FC Porto × Benfica (Liga Portugal): jogo equilibrado, com volume de gols na média (total esperado de 2,5 gols).","sem_modelo":null,"vitrine":{"modo":"1x2","p":[0.3853,0.2873,0.3274],"rotulos":["FC Porto","Empate","Benfica"],"lados":[{"nome":"FC Porto","forma":"VVVVV","nota":"13 pró · 2 contra nos últimos 5"},{"nome":"Benfica","forma":"VVVVV","nota":"19 pró · 2 contra nos últimos 5"}],"destaques":[{"r":"Gols esperados","v":"1,3 × 1,2"},{"r":"Total esperado","v":"2,5 gols"},{"r":"Placar mais provável","v":"1 x 1 (14%)"}]},"fav":null,"contexto":[]},{"id":"401872940","torneio":"nfl","nome_torneio":"NFL","esporte":"nfl","dia":"2026-09-20","hora":"17:05","estado":"pre","titulo":"Denver Broncos × Jacksonville Jaguars","detalhe":"","placar":null,"oportunidades":[],"pode_acontecer":"Modelo: Denver Broncos vence com 52%. Margem esperada: 1,3 pontos a favor de Denver Broncos (desvio de 13,1). Total esperado: 44,4 pontos (desvio de 13,5).","observacoes":["Denver Broncos: rating 1568 (55 jogos na base). Últimos 5: DVDVD, média de 18,2 pontos feitos e 17,4 sofridos.","Jacksonville Jaguars: rating 1583 (53 jogos na base). Últimos 5: DVDVV, média de 23,6 pontos feitos e 18,2 sofridos.","O desvio é o erro do próprio modelo medido nos jogos já encerrados, não um número escolhido."],"resumo":"Jacksonville Jaguars em Denver Broncos pela NFL: jogo aberto.","sem_modelo":null,"vitrine":{"modo":"duelo","p":[0.5246,null,0.4754],"rotulos":["Denver Broncos",null,"Jacksonville Jaguars"],"lados":[{"nome":"Denver Broncos","forma":"DVDVD","nota":"18,2 pts feitos · 17,4 sofridos nos últimos 5"},{"nome":"Jacksonville Jaguars","forma":"DVDVV","nota":"23,6 pts feitos · 18,2 sofridos nos últimos 5"}],"destaques":[{"r":"Margem esperada","v":"1,3 pts para Denver Broncos"},{"r":"Total esperado","v":"44,4 pts"},{"r":"Erro do modelo","v":"± 13,1 na margem"}]},"fav":"casa","contexto":[]},{"id":"401872941","torneio":"nfl","nome_torneio":"NFL","esporte":"nfl","dia":"2026-09-20","hora":"17:05","estado":"pre","titulo":"Los Angeles Chargers × Las Vegas Raiders","detalhe":"","placar":null,"oportunidades":[{"codigo":"total_menos_57.5","texto":"Menos de 57,5 pontos no jogo","p":0.9017,"p_bruta":0.9215,"fator":0.9,"taxa_base":0.7715,"porque":"Margem esperada de 6,0 ± 13,1 e total esperado de 38,4 ± 13,5 pontos. No torneio, este mercado bate em 77% dos jogos sem modelo nenhum; o modelo dá 90,2% (bruta 92,1%, fator 0,90).","leitura":"Margem esperada de 6,0 ± 13,1 e total esperado de 38,4 ± 13,5 pontos.","calculo":"No torneio, este mercado bate em 77% dos jogos sem modelo nenhum; o modelo dá 90,2% (bruta 92,1%, fator 0,90)."}],"pode_acontecer":"Modelo: Los Angeles Chargers vence com 66%. Margem esperada: 6,0 pontos a favor de Los Angeles Chargers (desvio de 13,1). Total esperado: 38,4 pontos (desvio de 13,5).","observacoes":["Los Angeles Chargers: rating 1483 (54 jogos na base). Últimos 5: DVDDD, média de 15,8 pontos feitos e 22,0 sofridos.","Las Vegas Raiders: rating 1380 (52 jogos na base). Últimos 5: VDVDV, média de 17,8 pontos feitos e 18,0 sofridos.","O desvio é o erro do próprio modelo medido nos jogos já encerrados, não um número escolhido."],"resumo":"Las Vegas Raiders em Los Angeles Chargers pela NFL: jogo aberto.","sem_modelo":null,"vitrine":{"modo":"duelo","p":[0.6637,null,0.3363],"rotulos":["Los Angeles Chargers",null,"Las Vegas Raiders"],"lados":[{"nome":"Los Angeles Chargers","forma":"DVDDD","nota":"15,8 pts feitos · 22,0 sofridos nos últimos 5"},{"nome":"Las Vegas Raiders","forma":"VDVDV","nota":"17,8 pts feitos · 18,0 sofridos nos últimos 5"}],"destaques":[{"r":"Margem esperada","v":"6,0 pts para Los Angeles Chargers"},{"r":"Total esperado","v":"38,4 pts"},{"r":"Erro do modelo","v":"± 13,1 na margem"}]},"fav":"casa","contexto":[{"texto":"Chargers sem Elijah Molden (posterior da coxa) e Trey Pipkins III (joelho), com Ladd McConkey em dúvida (costela). Raiders sem o CB Darien Porter, com o TE Brock Bowers improvável (joelho) e o QB Aidan O'Connell em dúvida (motivo pessoal). Jogo no SoFi Stadium. Resultado de busca na web, não conferido em segunda fonte.","fonte":"Raiders.com","url":"https://www.raiders.com/news/las-vegas-raiders-los-angeles-chargers-nfl-week-2-injury-report-2026-season","data":"2026-09-20"}]},{"id":"401872943","torneio":"nfl","nome_torneio":"NFL","esporte":"nfl","dia":"2026-09-20","hora":"17:25","estado":"pre","titulo":"Arizona Cardinals × Seattle Seahawks","detalhe":"","placar":null,"oportunidades":[],"pode_acontecer":"Modelo: Seattle Seahawks vence com 72%. Margem esperada: 8,0 pontos a favor de Seattle Seahawks (desvio de 13,1). Total esperado: 46,1 pontos (desvio de 13,5).","observacoes":["Arizona Cardinals: rating 1432 (52 jogos na base). Últimos 5: DVDDV, média de 26,8 pontos feitos e 27,4 sofridos.","Seattle Seahawks: rating 1680 (55 jogos na base). Últimos 5: VDDEV, média de 14,8 pontos feitos e 13,6 sofridos.","O desvio é o erro do próprio modelo medido nos jogos já encerrados, não um número escolhido."],"resumo":"Seattle Seahawks em Arizona Cardinals pela NFL: favorito claro para Seattle Seahawks.","sem_modelo":null,"vitrine":{"modo":"duelo","p":[0.2834,null,0.7166],"rotulos":["Arizona Cardinals",null,"Seattle Seahawks"],"lados":[{"nome":"Arizona Cardinals","forma":"DVDDV","nota":"26,8 pts feitos · 27,4 sofridos nos últimos 5"},{"nome":"Seattle Seahawks","forma":"VDDEV","nota":"14,8 pts feitos · 13,6 sofridos nos últimos 5"}],"destaques":[{"r":"Margem esperada","v":"8,0 pts para Seattle Seahawks"},{"r":"Total esperado","v":"46,1 pts"},{"r":"Erro do modelo","v":"± 13,1 na margem"}]},"fav":"fora","contexto":[]},{"id":"401872944","torneio":"nfl","nome_torneio":"NFL","esporte":"nfl","dia":"2026-09-20","hora":"17:25","estado":"pre","titulo":"Dallas Cowboys × Washington Commanders","detalhe":"","placar":null,"oportunidades":[],"pode_acontecer":"Modelo: Dallas Cowboys vence com 52%. Margem esperada: 1,2 pontos a favor de Dallas Cowboys (desvio de 13,1). Total esperado: 51,1 pontos (desvio de 13,5).","observacoes":["Dallas Cowboys: rating 1433 (53 jogos na base). Últimos 5: DVVDD, média de 22,4 pontos feitos e 21,8 sofridos.","Washington Commanders: rating 1452 (55 jogos na base). Últimos 5: VVDDD, média de 16,4 pontos feitos e 21,2 sofridos.","O desvio é o erro do próprio modelo medido nos jogos já encerrados, não um número escolhido."],"resumo":"Washington Commanders em Dallas Cowboys pela NFL: jogo aberto.","sem_modelo":null,"vitrine":{"modo":"duelo","p":[0.5204,null,0.4796],"rotulos":["Dallas Cowboys",null,"Washington Commanders"],"lados":[{"nome":"Dallas Cowboys","forma":"DVVDD","nota":"22,4 pts feitos · 21,8 sofridos nos últimos 5"},{"nome":"Washington Commanders","forma":"VVDDD","nota":"16,4 pts feitos · 21,2 sofridos nos últimos 5"}],"destaques":[{"r":"Margem esperada","v":"1,2 pts para Dallas Cowboys"},{"r":"Total esperado","v":"51,1 pts"},{"r":"Erro do modelo","v":"± 13,1 na margem"}]},"fav":"casa","contexto":[]},{"id":"401872942","torneio":"nfl","nome_torneio":"NFL","esporte":"nfl","dia":"2026-09-20","hora":"17:25","estado":"pre","titulo":"San Francisco 49ers × Miami Dolphins","detalhe":"","placar":null,"oportunidades":[{"codigo":"fav_+6.5","texto":"San Francisco 49ers com handicap +6,5 (vence ou perde por menos de 6,5)","p":0.9025,"p_bruta":0.8757,"fator":1.14,"taxa_base":0.8278,"porque":"Margem esperada de 8,6 ± 13,1 e total esperado de 45,6 ± 13,5 pontos. No torneio, este mercado bate em 83% dos jogos sem modelo nenhum; o modelo dá 90,3% (bruta 87,6%, fator 1,14).","leitura":"Margem esperada de 8,6 ± 13,1 e total esperado de 45,6 ± 13,5 pontos.","calculo":"No torneio, este mercado bate em 83% dos jogos sem modelo nenhum; o modelo dá 90,3% (bruta 87,6%, fator 1,14)."}],"pode_acontecer":"Modelo: San Francisco 49ers vence com 73%. Margem esperada: 8,6 pontos a favor de San Francisco 49ers (desvio de 13,1). Total esperado: 45,6 pontos (desvio de 13,5).","observacoes":["San Francisco 49ers: rating 1591 (57 jogos na base). Últimos 5: DDVVV, média de 21,0 pontos feitos e 19,2 sofridos.","Miami Dolphins: rating 1423 (53 jogos na base). Últimos 5: DDDDD, média de 9,0 pontos feitos e 25,6 sofridos.","O desvio é o erro do próprio modelo medido nos jogos já encerrados, não um número escolhido."],"resumo":"Miami Dolphins em San Francisco 49ers pela NFL: favorito claro para San Francisco 49ers.","sem_modelo":null,"vitrine":{"modo":"duelo","p":[0.7323,null,0.2677],"rotulos":["San Francisco 49ers",null,"Miami Dolphins"],"lados":[{"nome":"San Francisco 49ers","forma":"DDVVV","nota":"21,0 pts feitos · 19,2 sofridos nos últimos 5"},{"nome":"Miami Dolphins","forma":"DDDDD","nota":"9,0 pts feitos · 25,6 sofridos nos últimos 5"}],"destaques":[{"r":"Margem esperada","v":"8,6 pts para San Francisco 49ers"},{"r":"Total esperado","v":"45,6 pts"},{"r":"Erro do modelo","v":"± 13,1 na margem"}]},"fav":"casa","contexto":[{"texto":"49ers sem o WR De'Zhaun Stribling (tornozelo); o RB Kaelon Black e o kicker Eddy Piñeiro em dúvida; Bosa, Kittle e Juszczyk treinaram sem limitação na sexta. Dolphins sem Ronnie Harrison e Chop Robinson (concussão). Resultado de busca na web, não conferido em segunda fonte.","fonte":"The Phinsider","url":"https://www.thephinsider.com/miami-dolphins-injuries/122649/miami-dolphins-vs-san-francisco-49ers-injury-report-week-2-thursday-update-chop-robinson-concussion-nick-bosa","data":"2026-09-20"}]},{"id":"401841241","torneio":"brasileirao","nome_torneio":"Brasileirão Série A","esporte":"futebol","dia":"2026-09-20","hora":"18:30","estado":"pre","titulo":"Flamengo × Red Bull Bragantino","detalhe":"","placar":null,"oportunidades":[{"codigo":"1X","texto":"Flamengo não perde (dupla chance 1X)","p":0.921,"p_bruta":0.9103,"fator":1.06,"taxa_base":0.7554,"porque":"Gols esperados 2,2 × 0,7; vitória/empate/derrota do mandante 73%/18%/9%. No torneio, este mercado bate em 76% dos jogos sem modelo nenhum; o modelo dá 92,1% (bruta 91,0%, fator 1,06).","leitura":"Gols esperados 2,2 × 0,7; vitória/empate/derrota do mandante 73%/18%/9%.","calculo":"No torneio, este mercado bate em 76% dos jogos sem modelo nenhum; o modelo dá 92,1% (bruta 91,0%, fator 1,06)."},{"codigo":"casa_marca","texto":"Flamengo marca ao menos 1 gol","p":0.9091,"p_bruta":0.8939,"fator":1.08,"taxa_base":0.8219,"porque":"Gols esperados 2,2 × 0,7; vitória/empate/derrota do mandante 73%/18%/9%. No torneio, este mercado bate em 82% dos jogos sem modelo nenhum; o modelo dá 90,9% (bruta 89,4%, fator 1,08).","leitura":"Gols esperados 2,2 × 0,7; vitória/empate/derrota do mandante 73%/18%/9%.","calculo":"No torneio, este mercado bate em 82% dos jogos sem modelo nenhum; o modelo dá 90,9% (bruta 89,4%, fator 1,08)."}],"pode_acontecer":"Modelo: Flamengo 73% · empate 18% · Red Bull Bragantino 9%. Gols esperados: 2,2 × 0,7. Placar mais provável: 2 x 0 (14%).","observacoes":["Flamengo: ataque 53% acima da média, gols sofridos 36% abaixo da média (81 jogos na base). Últimos 5: DVVVV, 9 gols pró e 3 contra.","Red Bull Bragantino: ataque 3% abaixo da média, gols sofridos 3% abaixo da média (81 jogos na base). Últimos 5: EVDDE, 6 gols pró e 7 contra.","Mando de campo na base do torneio: em confronto equilibrado o mandante marca 41% a mais que o visitante."],"resumo":"Flamengo × Red Bull Bragantino (Brasileirão Série A): favorito claro para Flamengo, com volume de gols na média (total esperado de 2,9 gols).","sem_modelo":null,"vitrine":{"modo":"1x2","p":[0.7288,0.1815,0.0897],"rotulos":["Flamengo","Empate","Red Bull Bragantino"],"lados":[{"nome":"Flamengo","forma":"DVVVV","nota":"9 pró · 3 contra nos últimos 5"},{"nome":"Red Bull Bragantino","forma":"EVDDE","nota":"6 pró · 7 contra nos últimos 5"}],"destaques":[{"r":"Gols esperados","v":"2,2 × 0,7"},{"r":"Total esperado","v":"2,9 gols"},{"r":"Placar mais provável","v":"2 x 0 (14%)"}]},"fav":null,"contexto":[{"texto":"Flamengo sem Lucas Paquetá, Erick Pulgar e Samuel Lino (suspensos pelo terceiro amarelo) e sem Evertton Araújo (lesão); ataque provável com Arrascaeta, Bruno Henrique e Pedro. Bragantino sem Juninho Capixaba e Wallace Yan, suspensos. Jogo no Maracanã. Resultado de busca na web, não conferido em segunda fonte.","fonte":"Coluna do Fla","url":"https://colunadofla.com/2026/09/flamengo-tem-4-desfalques-para-jogo-contra-o-red-bull-bragantino-pelo-brasileirao/","data":"2026-09-20"}]},{"id":"401841238","torneio":"brasileirao","nome_torneio":"Brasileirão Série A","esporte":"futebol","dia":"2026-09-20","hora":"19:30","estado":"pre","titulo":"Athletico-PR × Bahia","detalhe":"","placar":null,"oportunidades":[],"pode_acontecer":"Modelo: Athletico-PR 51% · empate 25% · Bahia 23%. Gols esperados: 1,7 × 1,1. Placar mais provável: 1 x 1 (12%).","observacoes":["Athletico-PR: ataque 17% acima da média, gols sofridos 11% abaixo da média (44 jogos na base). Últimos 5: EVEDE, 11 gols pró e 12 contra.","Bahia: ataque 13% acima da média, gols sofridos 4% abaixo da média (80 jogos na base). Últimos 5: EVVVV, 13 gols pró e 8 contra.","Mando de campo na base do torneio: em confronto equilibrado o mandante marca 41% a mais que o visitante."],"resumo":"Athletico-PR × Bahia (Brasileirão Série A): leve favoritismo para Athletico-PR, com volume de gols na média (total esperado de 2,8 gols).","sem_modelo":null,"vitrine":{"modo":"1x2","p":[0.5143,0.2539,0.2318],"rotulos":["Athletico-PR","Empate","Bahia"],"lados":[{"nome":"Athletico-PR","forma":"EVEDE","nota":"11 pró · 12 contra nos últimos 5"},{"nome":"Bahia","forma":"EVVVV","nota":"13 pró · 8 contra nos últimos 5"}],"destaques":[{"r":"Gols esperados","v":"1,7 × 1,1"},{"r":"Total esperado","v":"2,8 gols"},{"r":"Placar mais provável","v":"1 x 1 (12%)"}]},"fav":null,"contexto":[]},{"id":"761829","torneio":"mls","nome_torneio":"MLS","esporte":"futebol","dia":"2026-09-20","hora":"20:00","estado":"pre","titulo":"Inter Miami CF × San Diego FC","detalhe":"","placar":null,"oportunidades":[{"codigo":"casa_marca","texto":"Inter Miami CF marca ao menos 1 gol","p":0.9442,"p_bruta":0.9321,"fator":1.08,"taxa_base":0.8424,"porque":"Gols esperados 2,7 × 1,6; vitória/empate/derrota do mandante 60%/18%/21%. No torneio, este mercado bate em 84% dos jogos sem modelo nenhum; o modelo dá 94,4% (bruta 93,2%, fator 1,08).","leitura":"Gols esperados 2,7 × 1,6; vitória/empate/derrota do mandante 60%/18%/21%.","calculo":"No torneio, este mercado bate em 84% dos jogos sem modelo nenhum; o modelo dá 94,4% (bruta 93,2%, fator 1,08)."},{"codigo":"mais_1.5","texto":"Mais de 1,5 gol no jogo","p":0.9212,"p_bruta":0.9319,"fator":0.94,"taxa_base":0.8199,"porque":"Gols esperados 2,7 × 1,6; vitória/empate/derrota do mandante 60%/18%/21%. No torneio, este mercado bate em 82% dos jogos sem modelo nenhum; o modelo dá 92,1% (bruta 93,2%, fator 0,94).","leitura":"Gols esperados 2,7 × 1,6; vitória/empate/derrota do mandante 60%/18%/21%.","calculo":"No torneio, este mercado bate em 82% dos jogos sem modelo nenhum; o modelo dá 92,1% (bruta 93,2%, fator 0,94)."}],"pode_acontecer":"Modelo: Inter Miami CF 60% · empate 18% · San Diego FC 21%. Gols esperados: 2,7 × 1,6. Placar mais provável: 2 x 1 (8%).","observacoes":["Inter Miami CF: ataque 56% acima da média, gols sofridos 5% acima da média (77 jogos na base). Últimos 5: DVEEE, 13 gols pró e 8 contra.","San Diego FC: ataque 7% acima da média, gols sofridos 4% abaixo da média (64 jogos na base). Últimos 5: VVDDD, 8 gols pró e 10 contra.","Mando de campo na base do torneio: em confronto equilibrado o mandante marca 26% a mais que o visitante."],"resumo":"Inter Miami CF × San Diego FC (MLS): leve favoritismo para Inter Miami CF, com tendência de muitos gols (total esperado de 4,3 gols).","sem_modelo":null,"vitrine":{"modo":"1x2","p":[0.6017,0.1837,0.2147],"rotulos":["Inter Miami CF","Empate","San Diego FC"],"lados":[{"nome":"Inter Miami CF","forma":"DVEEE","nota":"13 pró · 8 contra nos últimos 5"},{"nome":"San Diego FC","forma":"VVDDD","nota":"8 pró · 10 contra nos últimos 5"}],"destaques":[{"r":"Gols esperados","v":"2,7 × 1,6"},{"r":"Total esperado","v":"4,3 gols"},{"r":"Placar mais provável","v":"2 x 1 (8%)"}]},"fav":null,"contexto":[{"texto":"Messi sem problema físico, vindo de gol do título na Campeones Cup no meio da semana. Inter Miami deve ficar sem Silvetti, Santiago Morales, Micael e Allende. San Diego com o artilheiro Ingvartsen, Pirani e Mighten em dúvida por lesão. Resultado de busca na web, não conferido em segunda fonte.","fonte":"Sports Mole","url":"https://www.sportsmole.co.uk/football/inter-miami/preview/inter-miami-vs-san-diego-prediction-team-news-lineups_605423.html","data":"2026-09-20"}]},{"id":"401872945","torneio":"nfl","nome_torneio":"NFL","esporte":"nfl","dia":"2026-09-20","hora":"21:20","estado":"pre","titulo":"Kansas City Chiefs × Indianapolis Colts","detalhe":"","placar":null,"oportunidades":[],"pode_acontecer":"Modelo: Kansas City Chiefs vence com 64%. Margem esperada: 5,3 pontos a favor de Kansas City Chiefs (desvio de 13,1). Total esperado: 46,1 pontos (desvio de 13,5).","observacoes":["Kansas City Chiefs: rating 1524 (59 jogos na base). Últimos 5: DDDEV, média de 15,8 pontos feitos e 13,8 sofridos.","Indianapolis Colts: rating 1440 (52 jogos na base). Últimos 5: DEDDD, média de 17,6 pontos feitos e 30,2 sofridos.","O desvio é o erro do próprio modelo medido nos jogos já encerrados, não um número escolhido."],"resumo":"Indianapolis Colts em Kansas City Chiefs pela NFL: jogo aberto.","sem_modelo":null,"vitrine":{"modo":"duelo","p":[0.6424,null,0.3576],"rotulos":["Kansas City Chiefs",null,"Indianapolis Colts"],"lados":[{"nome":"Kansas City Chiefs","forma":"DDDEV","nota":"15,8 pts feitos · 13,8 sofridos nos últimos 5"},{"nome":"Indianapolis Colts","forma":"DEDDD","nota":"17,6 pts feitos · 30,2 sofridos nos últimos 5"}],"destaques":[{"r":"Margem esperada","v":"5,3 pts para Kansas City Chiefs"},{"r":"Total esperado","v":"46,1 pts"},{"r":"Erro do modelo","v":"± 13,1 na margem"}]},"fav":"casa","contexto":[]},{"id":"401872947","torneio":"nfl","nome_torneio":"NFL","esporte":"nfl","dia":"2026-09-21","hora":"21:15","estado":"pre","titulo":"Los Angeles Rams × New York Giants","detalhe":"","placar":null,"oportunidades":[],"pode_acontecer":"Modelo: Los Angeles Rams vence com 69%. Margem esperada: 7,0 pontos a favor de Los Angeles Rams (desvio de 13,1). Total esperado: 49,4 pontos (desvio de 13,5).","observacoes":["Los Angeles Rams: rating 1570 (58 jogos na base). Últimos 5: DVVVD, média de 21,6 pontos feitos e 17,6 sofridos.","New York Giants: rating 1443 (52 jogos na base). Últimos 5: VDVVV, média de 24,2 pontos feitos e 11,8 sofridos.","O desvio é o erro do próprio modelo medido nos jogos já encerrados, não um número escolhido."],"resumo":"New York Giants em Los Angeles Rams pela NFL: favorito claro para Los Angeles Rams.","sem_modelo":null,"vitrine":{"modo":"duelo","p":[0.6903,null,0.3097],"rotulos":["Los Angeles Rams",null,"New York Giants"],"lados":[{"nome":"Los Angeles Rams","forma":"DVVVD","nota":"21,6 pts feitos · 17,6 sofridos nos últimos 5"},{"nome":"New York Giants","forma":"VDVVV","nota":"24,2 pts feitos · 11,8 sofridos nos últimos 5"}],"destaques":[{"r":"Margem esperada","v":"7,0 pts para Los Angeles Rams"},{"r":"Total esperado","v":"49,4 pts"},{"r":"Erro do modelo","v":"± 13,1 na margem"}]},"fav":"casa","contexto":[]},{"id":"401921411","torneio":"ufc","nome_torneio":"UFC","esporte":"ufc","dia":"2026-09-22","hora":"20:00","estado":"pre","titulo":"Callum Connor × Piero Guaylupo","detalhe":"Dana White's Contender Series: Season 10, Week 7 · Lightweight","placar":null,"oportunidades":[],"pode_acontecer":null,"observacoes":[],"resumo":null,"sem_modelo":"Base insuficiente: algum dos lados tem menos jogos na base do que o mínimo do modelo. O robô não opina sobre este evento.","vitrine":null,"contexto":[]},{"id":"401921412","torneio":"ufc","nome_torneio":"UFC","esporte":"ufc","dia":"2026-09-22","hora":"20:00","estado":"pre","titulo":"Emilio Quissua × Damian Piwowarczyk","detalhe":"Dana White's Contender Series: Season 10, Week 7 · Light Heavyweight","placar":null,"oportunidades":[],"pode_acontecer":null,"observacoes":[],"resumo":null,"sem_modelo":"Base insuficiente: algum dos lados tem menos jogos na base do que o mínimo do modelo. O robô não opina sobre este evento.","vitrine":null,"contexto":[]},{"id":"401921409","torneio":"ufc","nome_torneio":"UFC","esporte":"ufc","dia":"2026-09-22","hora":"20:00","estado":"pre","titulo":"Jaden Ortega × Alvi Dasuyev","detalhe":"Dana White's Contender Series: Season 10, Week 7 · Welterweight","placar":null,"oportunidades":[],"pode_acontecer":null,"observacoes":[],"resumo":null,"sem_modelo":"Base insuficiente: algum dos lados tem menos jogos na base do que o mínimo do modelo. O robô não opina sobre este evento.","vitrine":null,"contexto":[]},{"id":"401921410","torneio":"ufc","nome_torneio":"UFC","esporte":"ufc","dia":"2026-09-22","hora":"20:00","estado":"pre","titulo":"Marcos Degli × Paris Moran","detalhe":"Dana White's Contender Series: Season 10, Week 7 · Flyweight","placar":null,"oportunidades":[],"pode_acontecer":null,"observacoes":[],"resumo":null,"sem_modelo":"Base insuficiente: algum dos lados tem menos jogos na base do que o mínimo do modelo. O robô não opina sobre este evento.","vitrine":null,"contexto":[]},{"id":"401891542","torneio":"ufc","nome_torneio":"UFC","esporte":"ufc","dia":"2026-09-22","hora":"20:00","estado":"pre","titulo":"Norbert Növényi Jr. × Theo Haig","detalhe":"Dana White's Contender Series: Season 10, Week 7 · Middleweight","placar":null,"oportunidades":[],"pode_acontecer":null,"observacoes":[],"resumo":null,"sem_modelo":"Base insuficiente: algum dos lados tem menos jogos na base do que o mínimo do modelo. O robô não opina sobre este evento.","vitrine":null,"contexto":[]},{"id":"761543","torneio":"mls","nome_torneio":"MLS","esporte":"futebol","dia":"2026-09-23","hora":"22:30","estado":"pre","titulo":"Seattle Sounders FC × Real Salt Lake","detalhe":"","placar":null,"oportunidades":[{"codigo":"fora_menos_2.5","texto":"Real Salt Lake marca no máximo 2 gols","p":0.9091,"p_bruta":0.9053,"fator":1.02,"taxa_base":0.8344,"porque":"Gols esperados 1,7 × 1,1; vitória/empate/derrota do mandante 50%/26%/24%. No torneio, este mercado bate em 83% dos jogos sem modelo nenhum; o modelo dá 90,9% (bruta 90,5%, fator 1,02).","leitura":"Gols esperados 1,7 × 1,1; vitória/empate/derrota do mandante 50%/26%/24%.","calculo":"No torneio, este mercado bate em 83% dos jogos sem modelo nenhum; o modelo dá 90,9% (bruta 90,5%, fator 1,02)."}],"pode_acontecer":"Modelo: Seattle Sounders FC 50% · empate 26% · Real Salt Lake 24%. Gols esperados: 1,7 × 1,1. Placar mais provável: 1 x 1 (12%).","observacoes":["Seattle Sounders FC: ataque 10% abaixo da média, gols sofridos 11% abaixo da média (73 jogos na base). Últimos 5: EEEEE, 7 gols pró e 7 contra.","Real Salt Lake: ataque 15% abaixo da média, gols sofridos 2% acima da média (71 jogos na base). Últimos 5: DEDDD, 3 gols pró e 10 contra.","Mando de campo na base do torneio: em confronto equilibrado o mandante marca 26% a mais que o visitante."],"resumo":"Seattle Sounders FC × Real Salt Lake (MLS): leve favoritismo para Seattle Sounders FC, com volume de gols na média (total esperado de 2,7 gols).","sem_modelo":null,"vitrine":{"modo":"1x2","p":[0.5011,0.2585,0.2404],"rotulos":["Seattle Sounders FC","Empate","Real Salt Lake"],"lados":[{"nome":"Seattle Sounders FC","forma":"EEEEE","nota":"7 pró · 7 contra nos últimos 5"},{"nome":"Real Salt Lake","forma":"DEDDD","nota":"3 pró · 10 contra nos últimos 5"}],"destaques":[{"r":"Gols esperados","v":"1,7 × 1,1"},{"r":"Total esperado","v":"2,7 gols"},{"r":"Placar mais provável","v":"1 x 1 (12%)"}]},"fav":null,"contexto":[]},{"id":"401872948","torneio":"nfl","nome_torneio":"NFL","esporte":"nfl","dia":"2026-09-24","hora":"21:15","estado":"pre","titulo":"Green Bay Packers × Atlanta Falcons","detalhe":"","placar":null,"oportunidades":[],"pode_acontecer":"Modelo: Green Bay Packers vence com 60%. Margem esperada: 3,8 pontos a favor de Green Bay Packers (desvio de 13,1). Total esperado: 45,9 pontos (desvio de 13,5).","observacoes":["Green Bay Packers: rating 1502 (56 jogos na base). Últimos 5: DDVVD, média de 26,6 pontos feitos e 29,8 sofridos.","Atlanta Falcons: rating 1456 (52 jogos na base). Últimos 5: VDVVD, média de 18,0 pontos feitos e 16,4 sofridos.","O desvio é o erro do próprio modelo medido nos jogos já encerrados, não um número escolhido."],"resumo":"Atlanta Falcons em Green Bay Packers pela NFL: jogo aberto.","sem_modelo":null,"vitrine":{"modo":"duelo","p":[0.5987,null,0.4013],"rotulos":["Green Bay Packers",null,"Atlanta Falcons"],"lados":[{"nome":"Green Bay Packers","forma":"DDVVD","nota":"26,6 pts feitos · 29,8 sofridos nos últimos 5"},{"nome":"Atlanta Falcons","forma":"VDVVD","nota":"18,0 pts feitos · 16,4 sofridos nos últimos 5"}],"destaques":[{"r":"Margem esperada","v":"3,8 pts para Green Bay Packers"},{"r":"Total esperado","v":"45,9 pts"},{"r":"Erro do modelo","v":"± 13,1 na margem"}]},"fav":"casa","contexto":[]}],"esportes":{"futebol":"Futebol","nba":"NBA","nfl":"NFL","tenis":"Tênis","ufc":"UFC"},"livro":{"publicadas":18,"abertas":14,"anuladas":0,"geral":{"n":4,"acertos":4,"acerto":1.0,"wilson_baixo":0.5100999795960008,"wilson_alto":1.0,"brier":0.006126585000000004,"p_media":0.92235},"por_esporte":[{"nome":"Futebol","n":4,"acertos":4,"acerto":1.0,"baixo":0.5100999795960008,"alto":1.0,"brier":0.006126585000000004,"p_media":0.92235}],"por_mercado":[{"nome":"Futebol · Visitante +1,5","n":3,"acertos":3,"acerto":1.0,"baixo":0.43849391955098227,"alto":1.0,"brier":0.005558030000000005,"p_media":0.9259666666666666},{"nome":"Futebol · Visitante marca","n":1,"acertos":1,"acerto":1.0,"baixo":0.20654329147389294,"alto":1.0,"brier":0.007832250000000004,"p_media":0.9115}],"por_torneio":[{"nome":"MLS","n":3,"acertos":3,"acerto":1.0,"baixo":0.43849391955098227,"alto":1.0,"brier":0.006530776666666669,"p_media":0.9198333333333334},{"nome":"Serie A (Itália)","n":1,"acertos":1,"acerto":1.0,"baixo":0.20654329147389294,"alto":1.0,"brier":0.004914010000000007,"p_media":0.9299}],"por_faixa":[{"nome":"90,0–92,5%","n":2,"acertos":2,"acerto":1.0,"baixo":0.34237195288961925,"alto":1.0,"brier":0.007631345000000006,"p_media":0.91265},{"nome":"92,5–95,0%","n":2,"acertos":2,"acerto":1.0,"baixo":0.34237195288961925,"alto":1.0,"brier":0.004621825000000001,"p_media":0.93205}],"ultimas":[{"titulo":"Sporting Kansas City × Philadelphia Union","texto":"Philadelphia Union com handicap +1,5 (perde por no máximo 1)","p":0.9342,"estado":"bateu","placar":"3 × 4","data":"2026-09-20"},{"titulo":"Sporting Kansas City × Philadelphia Union","texto":"Philadelphia Union marca ao menos 1 gol","p":0.9115,"estado":"bateu","placar":"3 × 4","data":"2026-09-20"},{"titulo":"Real Salt Lake × Vancouver Whitecaps","texto":"Vancouver Whitecaps com handicap +1,5 (perde por no máximo 1)","p":0.9138,"estado":"bateu","placar":"0 × 3","data":"2026-09-20"},{"titulo":"Fiorentina × Napoli","texto":"Napoli com handicap +1,5 (perde por no máximo 1)","p":0.9299,"estado":"bateu","placar":"1 × 1","data":"2026-09-20"}]},"backtest":{"periodo":{"inicio":"2025-07-01","corte_da_validacao":"2026-02-01","fim":"2026-09-19"},"versao":"1.1.0","jogos":{"total":8107,"por_esporte":{"futebol":4045,"nfl":302,"nba":1322,"tenis":2249,"ufc":189},"na_validacao":4143},"geral":{"n":2007,"acertos":1862,"acerto":0.9277528649725959,"wilson_baixo":0.9155901806872432,"wilson_alto":0.9382811535839396,"brier":0.06682776780641345,"p_media":0.9260742356698928},"eventos_com_oportunidade":1387,"por_esporte":[{"nome":"Futebol","n":1471,"acertos":1358,"acerto":0.9231815091774304,"baixo":0.908443336677045,"alto":0.9357151139660613,"brier":0.07056010402564301,"p_media":0.9292477818949022},{"nome":"NBA","n":289,"acertos":272,"acerto":0.9411764705882353,"baixo":0.9078250179756323,"alto":0.9629529042867785,"brier":0.05586252499657708,"p_media":0.9131546247772524},{"nome":"NFL","n":1,"acertos":1,"acerto":1.0,"baixo":0.20654329147389294,"alto":1.0,"brier":0.009535083414080395,"p_media":0.9023522482896795},{"nome":"Tênis","n":246,"acertos":231,"acerto":0.9390243902439024,"baixo":0.9018441328518407,"alto":0.9627036446199653,"brier":0.05762443966799213,"p_media":0.9223718089965779}],"por_mercado":[{"nome":"Futebol · Dupla chance 12","n":16,"acertos":13,"acerto":0.8125,"baixo":0.5699064013154177,"alto":0.9340852122641324,"brier":0.1685088798013793,"p_media":0.9227680509458139},{"nome":"Futebol · Dupla chance 1X","n":125,"acertos":119,"acerto":0.952,"baixo":0.8992276262354187,"alto":0.9778182968204886,"brier":0.04489899740975612,"p_media":0.9314839549685022},{"nome":"Futebol · Dupla chance X2","n":78,"acertos":72,"acerto":0.9230769230769231,"baixo":0.842165824059759,"alto":0.9642700227467552,"brier":0.07080862983924185,"p_media":0.9312678002892949},{"nome":"Futebol · Mandante +1,5","n":256,"acertos":240,"acerto":0.9375,"baixo":0.9008969618819807,"alto":0.9611666953615092,"brier":0.05790263145370605,"p_media":0.9377129818454919},{"nome":"Futebol · Mandante marca","n":189,"acertos":180,"acerto":0.9523809523809523,"baixo":0.9119897507501151,"alto":0.9747483804414949,"brier":0.046004979788749456,"p_media":0.9295284492426493},{"nome":"Futebol · Mandante marca 2+","n":4,"acertos":4,"acerto":1.0,"baixo":0.5100999795960008,"alto":1.0,"brier":0.00762495159134239,"p_media":0.9136029465775253},{"nome":"Futebol · Mandante até 1 gol","n":9,"acertos":8,"acerto":0.8888888888888888,"baixo":0.5649937852319399,"alto":0.9801096286728695,"brier":0.10374634227987485,"p_media":0.9164759039610387},{"nome":"Futebol · Mandante até 2 gols","n":152,"acertos":135,"acerto":0.8881578947368421,"baixo":0.8281892492606145,"alto":0.9289898351430365,"brier":0.09904532643352074,"p_media":0.9241539433120155},{"nome":"Futebol · Mandante vence","n":5,"acertos":3,"acerto":0.6,"baixo":0.23071993220883708,"alto":0.8823817688407467,"brier":0.3407924168902742,"p_media":0.9182633033373213},{"nome":"Futebol · Visitante +1,5","n":226,"acertos":209,"acerto":0.9247787610619469,"baixo":0.8828494938255467,"alto":0.9525084222349054,"brier":0.06988303649927596,"p_media":0.9271894383029272},{"nome":"Futebol · Visitante marca","n":80,"acertos":76,"acerto":0.95,"baixo":0.878375474489178,"alto":0.9803867628727044,"brier":0.04796951485946875,"p_media":0.9269285282227087},{"nome":"Futebol · Visitante até 1 gol","n":5,"acertos":3,"acerto":0.6,"baixo":0.23071993220883708,"alto":0.8823817688407467,"brier":0.34486248427839533,"p_media":0.9193415840600917},{"nome":"Futebol · Visitante até 2 gols","n":213,"acertos":196,"acerto":0.92018779342723,"baixo":0.8759125961777019,"alto":0.949574764181196,"brier":0.07407197781254043,"p_media":0.9300465909858086},{"nome":"Futebol · Mais de 1,5 gol","n":57,"acertos":51,"acerto":0.8947368421052632,"baixo":0.7887695089206027,"alto":0.9508560104608731,"brier":0.09414681076175074,"p_media":0.9223489889111622},{"nome":"Futebol · Menos de 4,5 gols","n":56,"acertos":49,"acerto":0.875,"baixo":0.763742793023606,"alto":0.9381100986103075,"brier":0.11110893523729486,"p_media":0.9181140177637346},{"nome":"NBA · Favorito com handicap +","n":82,"acertos":77,"acerto":0.9390243902439024,"baixo":0.8650777373754472,"alto":0.9736764330966781,"brier":0.05785913102129307,"p_media":0.9130891687323085},{"nome":"NBA · Favorito vence","n":14,"acertos":13,"acerto":0.9285714285714286,"baixo":0.6853073044604219,"alto":0.9872781138877085,"brier":0.06441592915718962,"p_media":0.9233224115967801},{"nome":"NBA · Total de pontos: mais de","n":17,"acertos":17,"acerto":1.0,"baixo":0.8156763396284354,"alto":1.0,"brier":0.0071502383654774865,"p_media":0.9163587085463352},{"nome":"NBA · Total de pontos: menos de","n":113,"acertos":108,"acerto":0.9557522123893806,"baixo":0.90058093130631,"alto":0.9809544122699507,"brier":0.04357599975293358,"p_media":0.9147872488253197},{"nome":"NBA · Azarão com handicap +","n":63,"acertos":57,"acerto":0.9047619047619048,"baixo":0.807380773471272,"alto":0.9556171200561122,"brier":0.08654533250427741,"p_media":0.90718736189957},{"nome":"NFL · Total de pontos: mais de","n":1,"acertos":1,"acerto":1.0,"baixo":0.20654329147389294,"alto":1.0,"brier":0.009535083414080395,"p_media":0.9023522482896795},{"nome":"Tênis · Favorito vence 2+ sets","n":58,"acertos":53,"acerto":0.9137931034482759,"baixo":0.8135613862273433,"alto":0.9626151680662066,"brier":0.08029863610380819,"p_media":0.924004879168354},{"nome":"Tênis · Favorito vence 1+ set","n":104,"acertos":99,"acerto":0.9519230769230769,"baixo":0.8923565255405173,"alto":0.9792922630531236,"brier":0.04671726613759542,"p_media":0.9116614213329854},{"nome":"Tênis · Favorito vence","n":84,"acertos":79,"acerto":0.9404761904761905,"baixo":0.8681156389946401,"alto":0.974309817736567,"brier":0.05547256649994362,"p_media":0.9345046928900371}],"por_torneio":[{"nome":"Brasileirão Série A","n":60,"acertos":55,"acerto":0.9166666666666666,"baixo":0.8193083153188752,"alto":0.9638800759495141,"brier":0.07598837347478835,"p_media":0.9179171313298684},{"nome":"Bundesliga","n":194,"acertos":182,"acerto":0.9381443298969072,"baixo":0.8950075659637614,"alto":0.9642657112438634,"brier":0.058119238448228035,"p_media":0.9316302769476905},{"nome":"Copa da Liga Inglesa","n":35,"acertos":34,"acerto":0.9714285714285714,"baixo":0.8546659090672868,"alto":0.9949386386341466,"brier":0.02849220600062376,"p_media":0.9326652542294409},{"nome":"La Liga","n":108,"acertos":96,"acerto":0.8888888888888888,"baixo":0.8157742465799382,"alto":0.9352879699834871,"brier":0.0994652055402115,"p_media":0.9261918017598245},{"nome":"Ligue 1","n":87,"acertos":79,"acerto":0.9080459770114943,"baixo":0.8289125711515433,"alto":0.952667674022474,"brier":0.08360659173828566,"p_media":0.9237050329770674},{"nome":"MLS","n":202,"acertos":182,"acerto":0.900990099009901,"baixo":0.8520231594025918,"alto":0.9349897670418199,"brier":0.0904493194709232,"p_media":0.9226828135408215},{"nome":"NBA","n":289,"acertos":272,"acerto":0.9411764705882353,"baixo":0.9078250179756323,"alto":0.9629529042867785,"brier":0.05586252499657708,"p_media":0.9131546247772524},{"nome":"NFL","n":1,"acertos":1,"acerto":1.0,"baixo":0.20654329147389294,"alto":1.0,"brier":0.009535083414080395,"p_media":0.9023522482896795},{"nome":"Liga Portugal","n":238,"acertos":221,"acerto":0.9285714285714286,"baixo":0.8885985073702009,"alto":0.9549288262233578,"brier":0.0659697102330834,"p_media":0.9337889125462213},{"nome":"Premier League","n":68,"acertos":62,"acerto":0.9117647058823529,"baixo":0.8205602176535453,"alto":0.958932443979826,"brier":0.08055446710841026,"p_media":0.9247324714460763},{"nome":"Liga Saudita","n":314,"acertos":292,"acerto":0.9299363057324841,"baixo":0.8962004653572404,"alto":0.9532792754948067,"brier":0.06405336169614256,"p_media":0.9321272166239968},{"nome":"Serie A (Itália)","n":165,"acertos":155,"acerto":0.9393939393939394,"baixo":0.892042486962154,"alto":0.9667506066830139,"brier":0.0568740761219443,"p_media":0.9326327612311878},{"nome":"Tênis · Grand Slams e Masters 1000 (ATP)","n":193,"acertos":180,"acerto":0.9326424870466321,"baixo":0.8881807553751814,"alto":0.9602171442557909,"brier":0.06297198478170847,"p_media":0.9230587801658934},{"nome":"Tênis · Grand Slams (feminino)","n":53,"acertos":51,"acerto":0.9622641509433962,"baixo":0.8724547684904087,"alto":0.9895899311661807,"brier":0.03815130368785526,"p_media":0.9198701970026552}],"por_faixa":[{"nome":"90,0–92,5%","n":1096,"acertos":1005,"acerto":0.916970802919708,"baixo":0.899142092293639,"alto":0.9318866667567552,"brier":0.07618807680258995,"p_media":0.9113685357433996},{"nome":"92,5–95,0%","n":629,"acertos":588,"acerto":0.9348171701112877,"baixo":0.9127647542386695,"alto":0.9515905599505367,"brier":0.06088644702652103,"p_media":0.9360504211752678},{"nome":"95,0–97,5%","n":260,"acertos":248,"acerto":0.9538461538461539,"baixo":0.9210719768500281,"alto":0.9734041027371182,"brier":0.043706928105625396,"p_media":0.9593888808354698},{"nome":"97,5–100,0%","n":22,"acertos":21,"acerto":0.9545454545454546,"baixo":0.7820151050048196,"alto":0.9919307806988522,"brier":0.04362824203131261,"p_media":0.9797387217383341}]},"rebaixados":[],"perguntas":[],"perguntas_respondidas":4,"respondidas":[{"id":"P4","tema":"regra de apuração no tênis","pergunta":"Quando há abandono ou W.O. no tênis, o robô anula a previsão (não conta como acerto nem como erro). As casas que você usa pagam o mercado de vencedor em caso de abandono, ou devolvem a aposta?","recomendacao":"Manter a anulação para todos os mercados de tênis.","resposta":"Sim.","respondida_em":"2026-09-19"},{"id":"P3","tema":"copas com times de divisões diferentes","pergunta":"Na Copa do Brasil o backtest bateu 67 de 79 (84,8%), abaixo da régua; o modelo mede a força de cada time dentro da própria divisão e enxerga mal o degrau entre Série A, B e times menores. Enquanto isso não é corrigido, você prefere ver as oportunidades da Copa do Brasil com essa ressalva, ou que elas fiquem fora do painel?","recomendacao":"Manter no painel com a ressalva, e atacar a causa no primeiro item do backlog (nível de divisão no ajuste das copas).","resposta":"Pode manter, inclusive as copas das 5 principais ligas dos campeonatos europeus.","respondida_em":"2026-09-19"},{"id":"P2","tema":"UFC","pergunta":"No UFC a fonte só dá vitória, derrota e cartel. Com isso o robô não chegou a 90% em nenhuma das 311 lutas do backtest, então o UFC aparece só com resumo, sem oportunidade. Existe algum critério seu que valha testar (por exemplo: campeão defendendo cinturão contra estreante no ranking, diferença de idade, volta de lesão longa, troca de adversário em cima da hora)?","recomendacao":"Manter o UFC só com resumo por enquanto, e testar em backtest o primeiro critério que você indicar antes de publicar qualquer oportunidade.","resposta":"No UFC vamos apenas de card principal, pois os preliminares normalmente possuem poucos dados para observar.","respondida_em":"2026-09-19"},{"id":"P1","tema":"mercados que valem para você","pergunta":"Quase tudo que chega a 90% é mercado de proteção: 'visitante com handicap +1,5', 'time marca ao menos 1 gol', 'time marca no máximo 2 gols', dupla chance. Esses mercados servem para o que você quer fazer, ou o painel deve contar só mercados mais fortes (vitória, dupla chance, mais de 1,5 gol)? Quais mercados você de fato aposta?","recomendacao":"Manter todos na estreia e decidir depois de duas semanas olhando o painel de verdade; se forem ruído, baixar o teto de utilidade de 85% para 80% em algoritmo/parametros.json (uma linha, sobe a versão).","resposta":"Todos.","respondida_em":"2026-09-19"}]}</script>
+<script>
+(function(){
+  "use strict";
+  var D = JSON.parse(document.getElementById("dados").textContent);
+  var $ = function(id){ return document.getElementById(id); };
+  function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+  function pct(x, casas){ return x == null ? "–" : (x * 100).toFixed(casas == null ? 1 : casas).replace(".", ",") + "%"; }
+  function guarda(k, v){ try { localStorage.setItem(k, v); } catch(e){} }
+  function le(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }
+  var DIAS_SEMANA = ["dom","seg","ter","qua","qui","sex","sáb"];
+  function data3(iso){ var p = iso.split("-"), d = new Date(Date.UTC(+p[0], +p[1]-1, +p[2])); return { semana: DIAS_SEMANA[d.getUTCDay()], curta: p[2] + "/" + p[1] }; }
+  function nomeDia(iso){ var d = data3(iso); return (iso === D.hoje ? "Hoje" : d.semana) + " " + d.curta; }
+
+  // ---------- identidade por esporte: ícone SVG próprio, sem imagem de terceiros ----------
+  var ICONES = {
+    futebol: '<circle cx="12" cy="12" r="8.6"/><path d="M12 7.2l3.9 2.9-1.5 4.6H9.6L8.1 10.1z"/><path d="M12 3.4v3.8M3.8 10.4l4.3-.3M20.2 10.4l-4.3-.3M7.2 19.8l2.4-5.1M16.8 19.8l-2.4-5.1"/>',
+    nba: '<circle cx="12" cy="12" r="8.6"/><path d="M3.4 12h17.2M12 3.4v17.2"/><path d="M5.8 5.8c3.4 3.4 3.4 9 0 12.4M18.2 5.8c-3.4 3.4-3.4 9 0 12.4"/>',
+    nfl: '<ellipse cx="12" cy="12" rx="8.8" ry="5.5" transform="rotate(-26 12 12)"/><path d="M8.3 14.2l7.4-4.4M10.1 11.6l1.2 1.5M12.2 10.3l1.2 1.5"/>',
+    tenis: '<ellipse cx="10.2" cy="9.4" rx="5.4" ry="6.6" transform="rotate(38 10.2 9.4)"/><path d="M13.9 14.2l5.6 6.1"/><path d="M6.6 6.2l7.4 5.4M8.7 4.4l6.1 4.5M5.6 9.1l6 4.4"/>',
+    ufc: '<path d="M6.6 10.4V9a2.2 2.2 0 014.4 0M11 9V7.8a2.2 2.2 0 014.4 0v2.6"/><path d="M6.6 10.4v4.2a4.6 4.6 0 004.6 4.6h1.6a4.6 4.6 0 004.6-4.6v-4.2"/><path d="M6.6 12.4H5.4A1.6 1.6 0 003.8 14v1.2a2 2 0 002 2h.8"/>',
+    outro: '<circle cx="12" cy="12" r="8.6"/><path d="M12 8v4l2.6 2"/>'
+  };
+  function icone(esp){ return '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' + (ICONES[esp] || ICONES.outro) + "</svg>"; }
+  function cls(esp){ return ICONES[esp] ? "e-" + esp : "e-outro"; }
+
+  // ---------- tema ----------
+  var raiz = document.documentElement;
+  var salvo = le("radar-tema"); if (salvo) raiz.setAttribute("data-theme", salvo);
+  $("tema").addEventListener("click", function(){
+    var escuro = raiz.getAttribute("data-theme") ? raiz.getAttribute("data-theme") === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+    var novo = escuro ? "light" : "dark";
+    raiz.setAttribute("data-theme", novo); guarda("radar-tema", novo);
+  });
+
+  // ---------- cabeçalho: uma linha de contexto + faixa fina ----------
+  var comOp = D.eventos.filter(function(e){ return e.oportunidades.length; });
+  var totalOp = D.eventos.reduce(function(s, e){ return s + e.oportunidades.length; }, 0);
+  var quandoCurto = D.gerado_em.replace(/\/\d{4}/, "");
+  $("meta").textContent = "v" + D.versao + " · régua " + pct(D.regua, 0) + " · gerado " + quandoCurto;
+  $("meta").title = D.dias.length + " dias de agenda · gerado em " + D.gerado_em + " (horário de Brasília)";
+  $("faixa").innerHTML =
+    '<div class="f ouro"><b>' + comOp.length + "</b><span>eventos com oportunidade</span></div>" +
+    '<div class="f"><b>' + totalOp + "</b><span>oportunidades ≥ " + pct(D.regua, 0) + "</span></div>" +
+    '<div class="f"><b>' + D.eventos.length + "</b><span>eventos na janela</span></div>" +
+    '<div class="f"><b>' + (D.livro.geral.n ? pct(D.livro.geral.acerto) : "–") + "</b><span>acerto ao vivo (" + D.livro.geral.n + ")</span></div>";
+  $("rodape").textContent = "Radar de Apostas · Claude-ADM · La Liga · projeto radar-de-apostas · algoritmo v" + D.versao +
+    " · janela de " + D.dias.length + " dias gerada em " + D.gerado_em + " (Brasília) · o painel não lista odds de casas e probabilidade não é garantia.";
+
+  // ---------- abas ----------
+  var ABAS = ["eventos", "desempenho", "perguntas"];
+  var botoesAba = [].slice.call(document.querySelectorAll("nav.abas button"));
+  botoesAba.forEach(function(b, i){
+    b.addEventListener("click", function(){ mostraAba(b.dataset.aba); });
+    b.addEventListener("keydown", function(ev){
+      var d = ev.key === "ArrowRight" ? 1 : (ev.key === "ArrowLeft" ? -1 : 0);
+      if (!d) return;
+      ev.preventDefault();
+      var alvo = botoesAba[(i + d + botoesAba.length) % botoesAba.length];
+      alvo.focus(); mostraAba(alvo.dataset.aba);
+    });
+  });
+  function mostraAba(nome){
+    botoesAba.forEach(function(o){ o.setAttribute("aria-selected", o.dataset.aba === nome ? "true" : "false"); });
+    ABAS.forEach(function(a){ $("aba-" + a).hidden = a !== nome; });
+  }
+  if (D.perguntas.length) document.querySelector('[data-aba="perguntas"]').innerHTML = 'Perguntas a Gustavo <span class="badge">' + D.perguntas.length + "</span>";
+
+  // ---------- filtros ----------
+  var filtro = { esporte: "todos", torneio: "todos", soOp: false, busca: "" };
+  try { var f = JSON.parse(le("radar-filtro") || "null"); if (f) { filtro.esporte = f.esporte || "todos"; filtro.torneio = f.torneio || "todos"; filtro.soOp = !!f.soOp; filtro.busca = f.busca || ""; } } catch(e){}
+  function guardaFiltro(){ guarda("radar-filtro", JSON.stringify(filtro)); }
+  function passa(e){
+    return (filtro.esporte === "todos" || e.esporte === filtro.esporte) &&
+           (filtro.torneio === "todos" || e.torneio === filtro.torneio) &&
+           (!filtro.soOp || e.oportunidades.length > 0) &&
+           (!filtro.busca || (e.titulo + " " + e.nome_torneio + " " + (e.detalhe || "")).toLowerCase().indexOf(filtro.busca.toLowerCase()) >= 0);
+  }
+  function desenhaFiltros(){
+    var esportes = [], conta = {};
+    D.eventos.forEach(function(e){ if (conta[e.esporte] == null) { conta[e.esporte] = 0; esportes.push(e.esporte); } conta[e.esporte]++; });
+    var h = '<button class="chip" type="button" data-esp="todos" aria-pressed="' + (filtro.esporte === "todos") + '">Todos <span class="qt">' + D.eventos.length + "</span></button>";
+    esportes.forEach(function(e){
+      h += '<button class="chip ' + cls(e) + '" type="button" data-esp="' + esc(e) + '" aria-pressed="' + (filtro.esporte === e) + '">' +
+           icone(e) + esc(D.esportes[e] || e) + ' <span class="qt">' + conta[e] + "</span></button>";
+    });
+    h += '<div class="busca"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>' +
+         '<input id="busca" type="search" placeholder="Buscar time, lutador, torneio" aria-label="Buscar time, lutador ou torneio" value="' + esc(filtro.busca) + '"></div>';
+    h += '<label class="sw"><input type="checkbox" id="so-op"' + (filtro.soOp ? " checked" : "") + '><span class="tr"></span>só com oportunidade</label>';
+    h += '<select class="sel-t" id="sel-t" aria-label="Filtrar por torneio"><option value="todos">Todos os torneios</option>';
+    D.torneios.forEach(function(t){
+      if (filtro.esporte !== "todos" && t.esporte !== filtro.esporte) return;
+      h += '<option value="' + esc(t.torneio) + '"' + (filtro.torneio === t.torneio ? " selected" : "") + ">" + esc(t.nome) + " (" + t.eventos + ")</option>";
+    });
+    $("filtros").innerHTML = h + "</select>";
+    [].slice.call($("filtros").querySelectorAll("[data-esp]")).forEach(function(b){
+      b.addEventListener("click", function(){ filtro.esporte = b.dataset.esp; filtro.torneio = "todos"; guardaFiltro(); desenhaFiltros(); desenhaDias(); desenhaLista(); });
+    });
+    $("sel-t").addEventListener("change", function(){ filtro.torneio = this.value; guardaFiltro(); desenhaDias(); desenhaLista(); });
+    $("so-op").addEventListener("change", function(){ filtro.soOp = this.checked; guardaFiltro(); desenhaDias(); desenhaLista(); });
+    var bs = $("busca");
+    bs.addEventListener("input", function(){ filtro.busca = this.value; guardaFiltro(); desenhaDias(); desenhaLista(); });
+  }
+
+  // ---------- destaques: o que a tela tem de responder em 5 segundos ----------
+  (function(){
+    if (!comOp.length) {
+      $("dest-bloco").innerHTML = '<div class="vazio-dest"><b>Nenhum evento da janela chegou à régua de ' + pct(D.regua, 0) + ".</b><br>" +
+        "Isso é resultado, não falha: o robô só publica o que passa na régua. A agenda completa continua abaixo.</div>";
+      return;
+    }
+    var ord = comOp.slice().sort(function(a, b){ return a.dia < b.dia ? -1 : (a.dia > b.dia ? 1 : (a.hora < b.hora ? -1 : 1)); });
+    var h = '<div class="dest-cab"><h2><span class="pt"></span>Destaques</h2><p>' + ord.length + " evento" + (ord.length > 1 ? "s" : "") +
+            " com oportunidade ≥ " + pct(D.regua, 0) + " nos próximos " + D.dias.length + " dias</p></div><div class=\"destaques\">";
+    ord.forEach(function(e){
+      var maior = e.oportunidades.reduce(function(m, o){ return o.p > m ? o.p : m; }, 0);
+      h += '<button class="cd ' + cls(e.esporte) + '" type="button" data-id="' + esc(e.id) + '">' +
+           '<span class="cd-top">' + icone(e.esporte) + "<span>" + esc(e.nome_torneio) + '</span><span class="qd">' + esc(nomeDia(e.dia)) + " · " + esc(e.hora) + "</span></span>" +
+           '<span class="cd-tit">' + esc(e.titulo) + "</span>" +
+           '<span class="cd-pe"><span class="cd-p">' + pct(maior) + "<small>maior chance</small></span>" +
+           '<span class="cd-n">' + e.oportunidades.length + " ≥ " + pct(D.regua, 0) + "</span></span></button>";
+    });
+    $("dest-bloco").innerHTML = h + "</div>";
+    [].slice.call($("dest-bloco").querySelectorAll(".cd")).forEach(function(b){ b.addEventListener("click", function(){ abre(b.dataset.id, b); }); });
+  })();
+
+  // ---------- seletor de dias: um dia por vez ----------
+  var diaAtivo = D.dias.indexOf(D.hoje) >= 0 ? D.hoje : D.dias[0];
+  function desenhaDias(){
+    var h = "";
+    D.dias.forEach(function(dia){
+      var evs = D.eventos.filter(function(e){ return e.dia === dia && passa(e); });
+      var n = evs.filter(function(e){ return e.oportunidades.length; }).length;
+      var d = data3(dia);
+      h += '<button role="tab" type="button" data-dia="' + dia + '" aria-selected="' + (dia === diaAtivo) + '">' +
+           '<span class="d1">' + (dia === D.hoje ? "Hoje" : esc(d.semana)) + " " + esc(d.curta) + "</span>" +
+           '<span class="d2">' + evs.length + (evs.length === 1 ? " evento" : " eventos") + "</span>" +
+           (n ? '<span class="d3"><span class="pip"></span>' + n + " com oportunidade</span>" : "") + "</button>";
+    });
+    $("dias").innerHTML = h;
+    [].slice.call($("dias").querySelectorAll("[data-dia]")).forEach(function(b, i, todos){
+      b.addEventListener("click", function(){ diaAtivo = b.dataset.dia; desenhaDias(); desenhaLista(); });
+      b.addEventListener("keydown", function(ev){
+        var d = ev.key === "ArrowRight" ? 1 : (ev.key === "ArrowLeft" ? -1 : 0);
+        if (!d) return;
+        ev.preventDefault();
+        var alvo = todos[(i + d + todos.length) % todos.length];
+        diaAtivo = alvo.dataset.dia; desenhaDias(); desenhaLista();
+        var novo = $("dias").querySelector('[data-dia="' + diaAtivo + '"]'); if (novo) novo.focus();
+      });
+    });
+  }
+
+  // ---------- agenda do dia, agrupada por torneio ----------
+  var recolhidos = {};
+  function selo(e){
+    if (e.estado === "encerrado") return '<span class="selo fim">' + esc(e.placar || "encerrado") + "</span>";
+    if (e.estado === "ao_vivo") return '<span class="selo fim">ao vivo</span>';
+    if (e.estado === "adiado") return '<span class="selo zero">adiado</span>';
+    var n = e.oportunidades.length;
+    if (!n) return '<span class="selo zero">sem ≥ ' + pct(D.regua, 0) + "</span>";
+    var maior = e.oportunidades.reduce(function(m, o){ return o.p > m ? o.p : m; }, 0);
+    return '<span class="selo">' + pct(maior) + " <small>× " + n + "</small></span>";
+  }
+  function mini(e){
+    var v = e.vitrine;
+    if (!v || e.estado !== "pre") return "";
+    var a = v.p[0] * 100, x = (v.p[1] || 0) * 100, b = v.p[2] * 100;
+    return '<span class="mini" aria-hidden="true"><i class="c" style="width:' + a + '%"></i>' +
+           (v.p[1] == null ? "" : '<i class="x" style="width:' + x + '%"></i>') + '<i class="f" style="width:' + b + '%"></i></span>';
+  }
+  function linhaEv(e){
+    var extra = e.oportunidades.length ? "" : (e.estado === "encerrado" || e.estado === "ao_vivo" ? " fim" : " zero");
+    return '<button class="ev' + extra + " " + cls(e.esporte) + '" type="button" data-id="' + esc(e.id) + '">' +
+           '<span class="hora">' + esc(e.hora) + (e.estado === "encerrado" ? "<small>fim</small>" : "") + "</span>" +
+           '<span><span class="tit">' + esc(e.titulo) + "</span>" +
+           (e.detalhe ? '<span class="sub">' + esc(e.detalhe) + "</span>" : "") + mini(e) + "</span>" +
+           selo(e) + "</button>";
+  }
+  function grupoHtml(g, chave){
+    var aberto = !recolhidos[chave];
+    return '<div class="grupo ' + cls(g.esporte) + (g.nOp ? " tem" : "") + '">' +
+      '<button class="gcab" type="button" aria-expanded="' + aberto + '" data-g="' + esc(chave) + '">' +
+      icone(g.esporte) + '<span class="gn">' + esc(g.nome) + "</span>" +
+      '<span class="gq">' + g.evs.length + (g.evs.length === 1 ? " evento" : " eventos") + "</span>" +
+      (g.nOp ? '<span class="gop">' + g.nOp + " com oportunidade</span>" : "") +
+      '<svg class="seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>' +
+      '<div class="glista">' + g.evs.map(linhaEv).join("") + "</div></div>";
+  }
+  function agrupa(evs){
+    var mapa = {}, ordem = [];
+    evs.forEach(function(e){
+      if (!mapa[e.torneio]) { mapa[e.torneio] = { nome: e.nome_torneio, esporte: e.esporte, evs: [], nOp: 0 }; ordem.push(e.torneio); }
+      mapa[e.torneio].evs.push(e);
+      if (e.oportunidades.length) mapa[e.torneio].nOp++;
+    });
+    return ordem.map(function(k){ return { k: k, g: mapa[k] }; })
+      .sort(function(a, b){ return (b.g.nOp - a.g.nOp) || (a.g.nome < b.g.nome ? -1 : 1); });
+  }
+  function desenhaLista(){
+    var doDia = D.eventos.filter(function(e){ return e.dia === diaAtivo && passa(e); });
+    if (!doDia.length) {
+      $("lista").innerHTML = '<div class="vazio">Nenhum evento neste dia com o filtro atual. Troque o dia acima ou limpe os filtros.</div>';
+      return;
+    }
+    var vivos = doDia.filter(function(e){ return e.estado !== "encerrado"; });
+    var fim = doDia.filter(function(e){ return e.estado === "encerrado"; });
+    var h = agrupa(vivos).map(function(o){ return grupoHtml(o.g, diaAtivo + "|" + o.k); }).join("") ||
+            '<div class="vazio">Todos os eventos deste dia já foram disputados.</div>';
+    if (fim.length) {
+      h += '<details class="encerrados"><summary><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>' +
+           "Encerrados neste dia (" + fim.length + ")</summary>" +
+           agrupa(fim).map(function(o){ return grupoHtml(o.g, diaAtivo + "|fim|" + o.k); }).join("") + "</details>";
+    }
+    $("lista").innerHTML = h;
+    [].slice.call($("lista").querySelectorAll(".ev")).forEach(function(b){ b.addEventListener("click", function(){ abre(b.dataset.id, b); }); });
+    [].slice.call($("lista").querySelectorAll(".gcab")).forEach(function(b){
+      b.addEventListener("click", function(){
+        var k = b.dataset.g, novo = b.getAttribute("aria-expanded") === "true";
+        recolhidos[k] = novo;
+        b.setAttribute("aria-expanded", !novo);
+      });
+    });
+  }
+  var sem = D.torneios.filter(function(t){ return !t.eventos; }).map(function(t){ return t.nome; });
+  var falhas = Object.keys(D.falhas_de_coleta || {});
+  $("semjanela").innerHTML = (sem.length ? "<b>Sem evento na janela:</b> " + esc(sem.join(" · ")) + "." : "") +
+    (falhas.length ? " <b>Coleta falhou hoje em:</b> " + esc(falhas.join(", ")) + " (o painel usa o último histórico bom)." : "");
+
+  // ---------- detalhe do evento: painel lateral no computador, folha de baixo no celular ----------
+  var voltarFoco = null;
+  function barra12(v){
+    if (!v) return "";
+    var tem = v.p[1] != null;
+    var a = v.p[0] * 100, x = tem ? v.p[1] * 100 : 0, b = v.p[2] * 100;
+    var r = function(p){ return p >= 12 ? pct(p / 100, 0) : ""; };
+    return '<div class="b12"><div class="tr" role="img" aria-label="' + esc(v.rotulos[0]) + " " + pct(v.p[0]) +
+      (tem ? "; empate " + pct(v.p[1]) : "") + "; " + esc(v.rotulos[2]) + " " + pct(v.p[2]) + '">' +
+      '<i class="c" style="width:' + a + '%">' + r(a) + "</i>" +
+      (tem ? '<i class="x" style="width:' + x + '%">' + r(x) + "</i>" : "") +
+      '<i class="f" style="width:' + b + '%">' + r(b) + "</i></div>" +
+      '<div class="rot"><span>' + esc(v.rotulos[0]) + "</span>" + (tem ? "<span>empate</span>" : "") + "<span>" + esc(v.rotulos[2]) + "</span></div></div>";
+  }
+  function pilulas(letras){
+    if (!letras) return "";
+    return '<span class="forma" role="img" aria-label="forma recente ' + esc(letras.split("").join(" ")) + '">' +
+      letras.split("").map(function(c){ return '<b class="' + esc(c) + '" aria-hidden="true">' + esc(c) + "</b>"; }).join("") + "</span>";
+  }
+  function medidor(p){
+    // a escala começa meio caminho abaixo da régua e vai até 100%: a régua fica marcada dentro da barra
+    var piso = D.regua - (1 - D.regua) / 2;
+    var pos = function(x){ return Math.max(0, Math.min(100, (x - piso) / (1 - piso) * 100)); };
+    return '<div class="med"><div class="esc"><i style="width:' + pos(p) + '%"></i><u style="left:' + pos(D.regua) + '%"></u></div>' +
+      '<div class="leg"><span>' + pct(piso, 0) + "</span><span>régua " + pct(D.regua, 0) + "</span><span>100%</span></div></div>";
+  }
+  function abre(id, origem){
+    var e = D.eventos.filter(function(x){ return x.id === id; })[0];
+    if (!e) return;
+    voltarFoco = origem || null;
+    var v = e.vitrine;
+    var h = '<div class="cab"><div><div class="k">' + icone(e.esporte) + "<span>" + esc(e.nome_torneio) + "</span></div>" +
+      "<h2>" + esc(e.titulo) + '</h2><div class="quando">' + esc(nomeDia(e.dia)) + " · " + esc(e.hora) +
+      (e.detalhe ? " · " + esc(e.detalhe) : "") + "</div></div>" +
+      '<button class="x" type="button" id="fecha" aria-label="Fechar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><div class="corpo">';
+    if (e.placar) h += '<p><span class="marca-fim">Encerrado: ' + esc(e.placar) + "</span></p>";
+
+    h += '<h4>Oportunidades ≥ ' + pct(D.regua, 0) + "</h4>";
+    if (e.oportunidades.length) {
+      e.oportunidades.forEach(function(o){
+        h += '<div class="op"><div class="ot">' + esc(o.texto) + "</div>" +
+          '<div class="oM"><span class="opp">' + pct(o.p) + "</span>" + medidor(o.p) + "</div>" +
+          '<p class="lei">' + esc(o.leitura || o.porque) + "</p>" +
+          (o.calculo ? "<details><summary>ver cálculo</summary><p>" + esc(o.calculo) + "</p></details>" : "") + "</div>";
+      });
+    } else if (e.estado === "pre") {
+      h += '<p class="nota">Nenhum mercado útil deste evento chegou a ' + pct(D.regua, 0) + ". Pelo critério do painel, este não é um evento para priorizar.</p>";
+    } else {
+      h += '<p class="nota">Evento já iniciado, encerrado ou adiado: o robô não publica oportunidade depois do início.</p>';
+    }
+
+    if (v) {
+      h += "<h4>Leitura do jogo</h4>";
+      if (e.resumo) h += '<p class="resumo">' + esc(e.resumo) + "</p>";
+      h += barra12(v);
+      if (v.destaques && v.destaques.length) {
+        h += '<div class="dests">' + v.destaques.map(function(d){ return '<div class="dest"><span>' + esc(d.r) + "</span><b>" + esc(d.v) + "</b></div>"; }).join("") + "</div>";
+      }
+      if (v.lados && v.lados.length) {
+        h += "<h4>Forma recente</h4>";
+        v.lados.forEach(function(l){
+          h += '<div class="lado"><span class="ln">' + esc(l.nome) + (l.nota ? '<span class="lnota">' + esc(l.nota) + "</span>" : "") + "</span>" +
+               '<span class="lf">' + (l.forma ? pilulas(l.forma) : '<span class="nota">' + esc(l.nota ? "" : "sem jogo na base") + "</span>") + "</span></div>";
+        });
+      }
+    } else if (e.resumo) {
+      h += "<h4>Leitura do jogo</h4><p class=\"resumo\">" + esc(e.resumo) + "</p>";
+    }
+    if (e.observacoes && e.observacoes.length) {
+      h += "<details class=\"secao\"><summary>Como o modelo chegou aqui</summary><ul>" +
+        e.observacoes.map(function(o){ return "<li>" + esc(o) + "</li>"; }).join("") + "</ul>" +
+        (e.pode_acontecer ? '<p class="nota">' + esc(e.pode_acontecer) + "</p>" : "") + "</details>";
+    }
+    if (e.sem_modelo) h += '<p class="nota" style="margin-top:12px">' + esc(e.sem_modelo) + "</p>";
+    if (e.contexto && e.contexto.length) {
+      h += "<h4>Contexto pesquisado pelo jogador da rotina</h4><ul>" + e.contexto.map(function(c){
+        var fonte = /^https?:\/\//.test(c.url || "") ? ' <a href="' + esc(c.url) + '" target="_blank" rel="noopener noreferrer">' + esc(c.fonte || "fonte") + "</a>" : " — fonte: " + esc(c.fonte || "não informada");
+        return "<li>" + esc(c.texto) + fonte + (c.data ? " (" + esc(c.data) + ")" : "") + "</li>"; }).join("") + "</ul>";
+    }
+    h += '<details class="aviso"><summary>Probabilidade não é garantia</summary><p>Mercado trivial (que já bate em mais de ' + pct(D.teto_base, 0) +
+      " dos jogos do torneio sem modelo nenhum) não conta e não aparece aqui. O robô erra por definição: um evento de " + pct(D.regua, 0) +
+      " falha, em média, uma vez em dez. Sem odds de casas.</p></details></div>";
+    $("dlg-corpo").className = "dlg " + cls(e.esporte);
+    $("dlg-corpo").innerHTML = h;
+    $("fecha").addEventListener("click", function(){ $("dlg").close(); });
+    $("dlg").showModal();
+    $("dlg").querySelector(".corpo").scrollTop = 0;
+  }
+  $("dlg").addEventListener("click", function(ev){
+    var r = $("dlg").getBoundingClientRect();
+    if (ev.clientX < r.left || ev.clientX > r.right || ev.clientY < r.top || ev.clientY > r.bottom) $("dlg").close();
+  });
+  $("dlg").addEventListener("close", function(){ if (voltarFoco && document.contains(voltarFoco)) voltarFoco.focus(); voltarFoco = null; });
+
+  // ---------- desempenho ----------
+  function barra(l){
+    var esq = Math.max(0, (l.baixo - 0.5) / 0.5 * 100), dir = Math.max(0, (l.alto - 0.5) / 0.5 * 100),
+        pt = Math.max(0, (l.acerto - 0.5) / 0.5 * 100), rg = (D.regua - 0.5) / 0.5 * 100;
+    return '<div class="barra" title="escala de 50% a 100%; faixa = intervalo de Wilson; traço = acerto; tracejado = régua"><i style="left:' + esq + "%;width:" + Math.max(1, dir - esq) + '%"></i><b style="left:' + pt + '%"></b><u style="left:' + rg + '%"></u></div>';
+  }
+  function situacao(l){
+    if (l.n < D.amostra_minima) return '<span class="pill warn">amostra pequena</span>';
+    if (l.baixo >= D.regua) return '<span class="pill ok">confirma a régua</span>';
+    if (l.alto < D.regua) return '<span class="pill crit">abaixo da régua</span>';
+    return '<span class="pill ok">compatível</span>';
+  }
+  function tabela(titulo, linhas, aberta){
+    if (!linhas.length) return "";
+    var h = '<details class="secao"' + (aberta ? " open" : "") + "><summary>" + esc(titulo) + '</summary><div class="tabela"><table><thead><tr><th>Recorte</th><th>Previsões</th><th>Bateram</th><th>Acerto</th><th class="col-opc">Prometido</th><th class="col-opc">Wilson 95%</th><th class="col-opc">50% → 100%</th><th>Leitura</th></tr></thead><tbody>';
+    linhas.forEach(function(l){
+      h += "<tr><td>" + esc(l.nome) + "</td><td>" + l.n + "</td><td>" + l.acertos + "</td><td><b>" + pct(l.acerto) + '</b></td><td class="col-opc">' + pct(l.p_media) + '</td><td class="col-opc">' + pct(l.baixo) + " a " + pct(l.alto) + '</td><td class="col-opc">' + barra(l) + "</td><td>" + situacao(l) + "</td></tr>";
+    });
+    return h + "</tbody></table></div></details>";
+  }
+  function geral(m){ return m.n ? "<b>" + m.acertos + " de " + m.n + " bateram: " + pct(m.acerto) + "</b> (Wilson 95%: " + pct(m.wilson_baixo) + " a " + pct(m.wilson_alto) + "; prometido em média " + pct(m.p_media) + "; Brier " + m.brier.toFixed(4).replace(".", ",") + ")" : "ainda sem previsão encerrada"; }
+  function grafico(linhas, titulo){
+    if (!linhas.length) return "";
+    var lin = 27, topo = 24, larg = 290, esqLab = 150, h = topo + linhas.length * lin + 22;
+    // a escala vai de metade a 100%: intervalo que estoura a régua para baixo fica preso na borda
+    var x = function(v){ return esqLab + Math.max(0, Math.min(1, (v - 0.5) / 0.5)) * larg; };
+    var s = '<svg class="grafico" viewBox="0 0 ' + (esqLab + larg + 62) + " " + h + '" role="img" aria-label="' + esc(titulo) + '">';
+    s += '<line x1="' + x(D.regua) + '" y1="' + (topo - 12) + '" x2="' + x(D.regua) + '" y2="' + (topo + linhas.length * lin - 8) + '" stroke="var(--crit)" stroke-width="1.5" stroke-dasharray="3 3"/>';
+    s += '<text x="' + x(D.regua) + '" y="' + (topo - 16) + '" text-anchor="middle" fill="var(--crit)">régua ' + pct(D.regua, 0) + "</text>";
+    linhas.forEach(function(l, i){
+      var y = topo + i * lin + 8;
+      s += '<text class="nome" x="' + (esqLab - 8) + '" y="' + (y + 4) + '" text-anchor="end">' + esc(l.nome) + "</text>";
+      s += '<line x1="' + esqLab + '" y1="' + y + '" x2="' + (esqLab + larg) + '" y2="' + y + '" stroke="var(--line)" stroke-width="7" stroke-linecap="round"/>';
+      s += '<line x1="' + x(l.baixo) + '" y1="' + y + '" x2="' + x(l.alto) + '" y2="' + y + '" stroke="var(--acc)" stroke-width="7" stroke-linecap="round" opacity=".45"/>';
+      s += '<circle cx="' + x(l.acerto) + '" cy="' + y + '" r="4" fill="var(--acc)" stroke="var(--surface)" stroke-width="1.5"/>';
+      s += '<text class="val" x="' + (esqLab + larg + 8) + '" y="' + (y + 4) + '">' + pct(l.acerto) + "</text>";
+    });
+    var yb = topo + linhas.length * lin;
+    s += '<text x="' + esqLab + '" y="' + yb + '">50%</text><text x="' + (esqLab + larg) + '" y="' + yb + '" text-anchor="end">100%</text>';
+    return s + "</svg>";
+  }
+  (function(){
+    var L = D.livro, B = D.backtest, um = D.ultima_mudanca;
+    var h = '<div class="kpis">' +
+      '<div class="kpi"><span>Acerto ao vivo</span><b>' + (L.geral.n ? pct(L.geral.acerto) : "–") + "</b><small>" +
+        (L.geral.n ? "Wilson 95%: " + pct(L.geral.wilson_baixo) + " a " + pct(L.geral.wilson_alto) : "ainda sem previsão encerrada") + "</small></div>" +
+      '<div class="kpi"><span>Previsões publicadas</span><b>' + L.publicadas + "</b><small>" + L.abertas + " aguardando o evento</small></div>" +
+      '<div class="kpi"><span>Encerradas</span><b>' + L.geral.n + "</b><small>" + L.anuladas + " anuladas (prorrogação, abandono, adiamento)</small></div>" +
+      '<div class="kpi"><span>Algoritmo</span><b>v' + esc(D.versao) + "</b><small>" + (um ? "última mudança em " + esc(um.data) : "sem mudança registrada") + "</small></div></div>";
+
+    h += '<div class="cartao"><h3>Ao vivo: o que o painel publicou</h3>';
+    if (!L.geral.n) {
+      h += '<div class="nada"><svg viewBox="0 0 24 24"><path d="M12 8v5M12 16.5v.01"/><circle cx="12" cy="12" r="9"/></svg>' +
+        "<div><b>Nada encerrado ainda</b>As previsões publicadas hoje só entram nesta conta depois que o evento acaba. Enquanto isso, o número que existe é o do backtest, abaixo.</div></div>";
+    } else {
+      h += "<p>" + geral(L.geral) + "</p>" + (L.por_esporte.length ? "<h4 class=\"eyebrow\" style=\"margin:14px 0 0\">Acerto por esporte contra a régua</h4>" + grafico(L.por_esporte, "acerto ao vivo por esporte contra a régua") : "") +
+        tabela("Por esporte", L.por_esporte) + tabela("Por mercado", L.por_mercado) + tabela("Por torneio", L.por_torneio) + tabela("Por faixa de probabilidade", L.por_faixa);
+      if (L.ultimas.length) {
+        h += '<details class="secao"><summary>Últimas encerradas</summary><ul>';
+        L.ultimas.forEach(function(u){
+          var c = u.estado === "bateu" ? "ok" : (u.estado === "nao_bateu" ? "crit" : "warn"), rot = u.estado === "bateu" ? "bateu" : (u.estado === "nao_bateu" ? "não bateu" : "anulada");
+          h += '<li><span class="pill ' + c + '">' + rot + "</span> " + esc(u.titulo) + " — " + esc(u.texto) + " (" + pct(u.p) + ") · " + esc(u.placar || "") + "</li>";
+        });
+        h += "</ul></details>";
+      }
+    }
+    h += '<p class="nota" style="margin-top:12px">' + L.publicadas + " previsões publicadas · " + L.abertas + " aguardando o evento · " + L.anuladas + " anuladas.</p></div>";
+
+    h += '<div class="cartao"><h3>Antes da estreia: backtest</h3><p>Validação fora da amostra, de ' + esc(B.periodo.corte_da_validacao) + " a " + esc(B.periodo.fim) +
+      " (" + B.jogos.na_validacao + " jogos previstos só com o que havia antes de cada um): " + geral(B.geral) + ". " + B.eventos_com_oportunidade + " eventos teriam tido oportunidade.</p>" +
+      (B.por_esporte.length ? grafico(B.por_esporte, "acerto do backtest por esporte contra a régua") : "") +
+      tabela("Por esporte", B.por_esporte) + tabela("Por faixa de probabilidade", B.por_faixa) + tabela("Por mercado", B.por_mercado) + tabela("Por torneio", B.por_torneio) +
+      '<p class="nota" style="margin-top:12px">Backtest não é promessa: mede o algoritmo v' + esc(B.versao) + " em jogos passados. O número que vale é o do quadro “Ao vivo”, que cresce a cada dia.</p></div>";
+
+    h += '<div class="cartao"><h3>Como o robô muda</h3>' +
+      "<p>" + (um ? "Última mudança: <b>" + esc(um.data) + " · v" + esc(um.versao) + "</b> — " + esc(um.texto) : "Sem mudança registrada.") + "</p>" +
+      (D.rebaixados.length ? '<p><span class="pill crit">Mercados rebaixados</span> ' + esc(D.rebaixados.join(" · ")) + "</p>" : "") +
+      '<p class="nota">O robô só muda com amostra: mínimo de ' + D.amostra_minima + " previsões encerradas por mercado. Toda mudança sobe a versão e ganha linha datada no histórico do algoritmo. A régua de " + pct(D.regua, 0) + " só muda por decisão de Gustavo.</p></div>";
+    $("aba-desempenho").innerHTML = h;
+  })();
+
+  // ---------- perguntas ----------
+  (function(){
+    var h = "";
+    if (D.perguntas.length) {
+      h += '<div class="cartao"><h3>Perguntas abertas a Gustavo</h3>';
+      D.perguntas.forEach(function(p){
+        h += '<div class="perg"><div class="eyebrow">' + esc(p.id) + " · " + esc(p.tema) + " · aberta em " + esc(p.aberta_em) + '</div><div class="q">' + esc(p.pergunta) +
+          "</div><p><b>Recomendação:</b> " + esc(p.recomendacao) + '</p><p class="nota"><b>Por quê:</b> ' + esc(p.porque) + "</p></div>";
+      });
+      h += '<p class="nota">Para responder, fale com o Muricy no chat citando o código da pergunta.</p></div>';
+    } else {
+      h += '<div class="cartao"><div class="nada"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>' +
+        "<div><b>Nenhuma pergunta aberta</b>O robô só pergunta quando a dúvida é de critério esportivo e muda o que entra no painel. Quando houver uma, ela aparece aqui com a recomendação e o porquê — e o número da aba avisa.</div></div>";
+      if (D.respondidas && D.respondidas.length) {
+        h += '<details class="secao" style="border-top:0"><summary>Histórico: ' + D.respondidas.length + " respondida" + (D.respondidas.length > 1 ? "s" : "") + "</summary>";
+        D.respondidas.forEach(function(p){
+          h += '<div class="perg"><div class="eyebrow">' + esc(p.id) + " · " + esc(p.tema) + (p.respondida_em ? " · respondida em " + esc(p.respondida_em) : "") +
+            '</div><div class="q">' + esc(p.pergunta) + '</div><p><b>Gustavo:</b> ' + esc(p.resposta) + "</p></div>";
+        });
+        h += "</details>";
+      }
+      h += "</div>";
+    }
+    if (D.perguntas.length && D.respondidas && D.respondidas.length) {
+      h += '<div class="cartao"><details class="secao" style="border-top:0"><summary>Histórico: ' + D.respondidas.length + " respondida" + (D.respondidas.length > 1 ? "s" : "") + "</summary>";
+      D.respondidas.forEach(function(p){
+        h += '<div class="perg"><div class="eyebrow">' + esc(p.id) + " · " + esc(p.tema) + (p.respondida_em ? " · respondida em " + esc(p.respondida_em) : "") +
+          '</div><div class="q">' + esc(p.pergunta) + '</div><p><b>Gustavo:</b> ' + esc(p.resposta) + "</p></div>";
+      });
+      h += "</details></div>";
+    }
+    $("aba-perguntas").innerHTML = h;
+  })();
+
+  desenhaFiltros();
+  desenhaDias();
+  desenhaLista();
+})();
+</script>
+</body>
+</html>
